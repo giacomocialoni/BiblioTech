@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.LoanControllerGUI;
 import bean.BookBean;
 
@@ -16,7 +16,7 @@ public class ConfirmLoanState extends SecondaryState {
     @Override
     public void onEnter() {
         LoanControllerGUI controller = stateManager.getStageManager()
-            .<LoanControllerGUI>loadContent(StageManager.CONFIRM_LOAN_VIEW);
+            .<LoanControllerGUI>loadContent(StageManagerGUI.CONFIRM_LOAN_VIEW);
         if (controller != null) {
             controller.setStateManager(stateManager);
             controller.setBorrowData(book);

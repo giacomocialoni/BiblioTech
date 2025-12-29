@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.PostControllerGUI;
 
 public class PostState extends PrimaryState {
@@ -12,7 +12,7 @@ public class PostState extends PrimaryState {
     @Override
     protected void loadContent() {
         PostControllerGUI postController =
-                stateManager.getStageManager().<PostControllerGUI>loadContent(StageManager.POST_VIEW);
+                stateManager.getStageManager().<PostControllerGUI>loadContent(StageManagerGUI.POST_VIEW);
 
         if (postController != null) {
             postController.setStateManager(stateManager);

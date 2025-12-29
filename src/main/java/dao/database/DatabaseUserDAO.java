@@ -17,8 +17,8 @@ public class DatabaseUserDAO implements UserDAO {
     }
 
     @Override
-    public User getUserByEmail(String email) throws DAOException {
-        String sql = "SELECT email, password, first_name, last_name FROM users WHERE email = ?";
+    public User getUser(String email) throws DAOException {
+        String sql = "SELECT email, password, first_name, last_name FROM users WHERE email = ? AND role = 'logged_user'";
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -43,35 +43,6 @@ public class DatabaseUserDAO implements UserDAO {
 
     @Override
     public List<User> getAllUsers() throws DAOException {
-        List<User> users = new ArrayList<>();
-        String sql = "SELECT email, password, first_name, last_name, role FROM users";
-
-        try (Connection conn = dbConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-
-            while (rs.next()) {
-                String role = rs.getString("role");
-                if ("logged_user".equals(role)) {
-                    users.add(new User(
-                        rs.getString("email"),
-                        rs.getString("password"),
-                        rs.getString("first_name"),
-                        rs.getString("last_name")
-                    ));
-                }
-                // Admin non vengono inclusi nella lista degli utenti normali
-            }
-
-            return users;
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante il recupero di tutti gli utenti", e);
-        }
-    }
-
-    @Override
-    public List<User> getLoggedUsers() throws DAOException {
         List<User> users = new ArrayList<>();
         String sql = "SELECT email, password, first_name, last_name FROM users WHERE role = 'logged_user' ORDER BY last_name, first_name";
         

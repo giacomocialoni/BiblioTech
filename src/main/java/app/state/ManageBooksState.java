@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.ManageBooksControllerGUI;
 
 public class ManageBooksState extends PrimaryState {
@@ -12,7 +12,7 @@ public class ManageBooksState extends PrimaryState {
     @Override
     protected void loadContent() {
         ManageBooksControllerGUI manageBookController =
-                stateManager.getStageManager().<ManageBooksControllerGUI>loadContent(StageManager.MANAGE_BOOKS_VIEW);
+                stateManager.getStageManager().<ManageBooksControllerGUI>loadContent(StageManagerGUI.MANAGE_BOOKS_VIEW);
 
         if (manageBookController != null) {
             manageBookController.setStateManager(stateManager);

@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.ManageUsersControllerGUI;
 
 public class ManageUsersState extends PrimaryState {
@@ -12,7 +12,7 @@ public class ManageUsersState extends PrimaryState {
     @Override
     protected void loadContent() {
         ManageUsersControllerGUI manageUsersController = 
-            stateManager.getStageManager().<ManageUsersControllerGUI>loadContent(StageManager.MANAGE_USERS_VIEW);
+            stateManager.getStageManager().<ManageUsersControllerGUI>loadContent(StageManagerGUI.MANAGE_USERS_VIEW);
 
         if (manageUsersController != null) {
             manageUsersController.setStateManager(stateManager);

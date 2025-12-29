@@ -40,7 +40,6 @@ public class PurchaseController {
         Account user = session.getLoggedUser();
         Book book;
 
-        // Recupero libro
         try {
             book = bookDAO.getBookById(bookId);
         } catch (RecordNotFoundException e) {
@@ -51,25 +50,15 @@ public class PurchaseController {
             return BuyResult.ERROR;
         }
 
-        // Controlli di dominio
         if (book.getStock() < quantity)
             return BuyResult.INSUFFICIENT_STOCK;
 
-        // Operazione di acquisto
         try {
-            book.setStock(book.getStock() - quantity);
-            bookDAO.updateBook(book);
+            bookDAO.updateStock(bookId, -quantity);
 
-            purchaseDAO.addReservedPurchase(
-                    user.getEmail(),
-                    bookId
-            );
+            purchaseDAO.addPurchase(user.getEmail(), bookId);
 
             return BuyResult.SUCCESS;
-
-        } catch (RecordNotFoundException e) {
-            logger.warn("Libro non trovato durante update id={}", bookId);
-            return BuyResult.ERROR;
 
         } catch (DAOException e) {
             logger.error(
@@ -91,10 +80,7 @@ public class PurchaseController {
         Account user = session.getLoggedUser();
 
         try {
-            return purchaseDAO.hasUserPurchasedBook(
-                    user.getEmail(),
-                    bookId
-            );
+            return purchaseDAO.hasUserPurchasedBook(user.getEmail(), bookId);
         } catch (DAOException e) {
             logger.error(
                     "Errore DAO controllo acquisto libro id={} user={}",

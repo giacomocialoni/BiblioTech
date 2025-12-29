@@ -1,22 +1,20 @@
 package controller.gui;
 
 import java.util.Map;
-
-import app.Session;
-import app.state.MainGuestState;
+import controller.app.LogoutController;
 import app.state.ManageBooksState;
 import app.state.ManageUsersState;
 import app.state.PostState;
 import app.state.ReservationState;
 import app.state.ReturnLoanState;
+import app.state.MainGuestState;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.layout.VBox;
 
 public class MainAdminControllerGUI extends AbstractMainControllerGUI {
 
     @FXML private Button prenotazioniButton, gestioneLibriButton, gestioneUtentiButton, postButton, logoutButton, prestitiButton;
-    @FXML private VBox topContainer; // Aggiungi questo campo
+    private LogoutController logoutController;
 
     @FXML
     public void initialize() {
@@ -27,36 +25,27 @@ public class MainAdminControllerGUI extends AbstractMainControllerGUI {
             ManageUsersState.class, gestioneUtentiButton,
             PostState.class, postButton
         );
+        logoutController = new LogoutController();
     }
 
     @FXML
-    private void showReservations() {
-        stateManager.setState(new ReservationState(stateManager));
-    }
+    private void showReservations() { stateManager.setState(new ReservationState(stateManager)); }
     
     @FXML
-    private void showReturnLoans() {
-        stateManager.setState(new ReturnLoanState(stateManager));
-    }
+    private void showReturnLoans() { stateManager.setState(new ReturnLoanState(stateManager)); }
 
     @FXML
-    private void showManageBooks() {
-        stateManager.setState(new ManageBooksState(stateManager));
-    }
+    private void showManageBooks() { stateManager.setState(new ManageBooksState(stateManager)); }
 
     @FXML
-    private void showManageUsers() {
-        stateManager.setState(new ManageUsersState(stateManager));
-    }
+    private void showManageUsers() { stateManager.setState(new ManageUsersState(stateManager)); }
 
     @FXML
-    private void showPost() {
-        stateManager.setState(new PostState(stateManager));
-    }
+    private void showPost() { stateManager.setState(new PostState(stateManager)); }
 
     @FXML
     private void handleLogout() {
-        Session.getInstance().logout();
+        logoutController.logout(); // logica applicativa pura
         stateManager.setState(new MainGuestState(stateManager));
     }
 }

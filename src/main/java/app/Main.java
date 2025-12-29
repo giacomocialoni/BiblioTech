@@ -12,6 +12,7 @@ import dao.database.DBConnection;
 import dao.database.DatabaseBookDAO;
 import dao.factory.DAOFactory;
 import dao.factory.DatabaseDAOFactory;
+import dao.factory.InMemoryDAOFactory;
 
 public class Main {
 
@@ -34,49 +35,52 @@ public class Main {
 
         // --- Configurazione DAOFactory ---
         DAOFactory factory;
-
-        if ("DB".equalsIgnoreCase(dataSourceType)) {
-
-            Properties dbProps = new Properties();
-            try (InputStream dbInput = new FileInputStream("src/main/resources/db.properties")) {
-                dbProps.load(dbInput);
-            } catch (IOException e) {
-                throw new RuntimeException("Errore durante la lettura di db.properties", e);
-            }
-
-            String url = resolveEnv(dbProps.getProperty("db.url"));
-            String user = resolveEnv(dbProps.getProperty("db.user"));
-            String password = resolveEnv(dbProps.getProperty("db.password"));
-
-            if (url == null || user == null) {
-                throw new IllegalStateException(
-                        "Variabili d'ambiente DB non configurate correttamente");
-            }
-
-            DBConnection dbConnection = new DBConnection(url, user, password);
-
-            DatabaseBookDAO bookDAO = new DatabaseBookDAO(dbConnection);
-            
-            factory = new CustomDatabaseDAOFactory(dbConnection, bookDAO);
-
-        } else if ("CSV".equalsIgnoreCase(dataSourceType)) {
-            factory = DAOFactory.getFactory("CSV", null);
-        } else {
-            throw new IllegalArgumentException("Tipo di data source non valido: " + dataSourceType);
-        }
-
-        // --- Impostazione factory globale ---
-        DAOFactory.setActiveFactory(factory);
-
-        // --- Registrazione observer ---
-        wishlistObservable.addObserver(new WishlistEmailObserver());
-
+        
         // --- Avvio interfaccia ---
-        if ("GUI".equalsIgnoreCase(viewType)) {
+        if ("FULL".equalsIgnoreCase(viewType)) {
+
+	        if ("DB".equalsIgnoreCase(dataSourceType)) {
+	
+	            Properties dbProps = new Properties();
+	            try (InputStream dbInput = new FileInputStream("src/main/resources/db.properties")) {
+	                dbProps.load(dbInput);
+	            } catch (IOException e) {
+	                throw new RuntimeException("Errore durante la lettura di db.properties", e);
+	            }
+	
+	            String url = resolveEnv(dbProps.getProperty("db.url"));
+	            String user = resolveEnv(dbProps.getProperty("db.user"));
+	            String password = resolveEnv(dbProps.getProperty("db.password"));
+	
+	            if (url == null || user == null) {
+	                throw new IllegalStateException(
+	                        "Variabili d'ambiente DB non configurate correttamente");
+	            }
+	
+	            DBConnection dbConnection = new DBConnection(url, user, password);
+	
+	            DatabaseBookDAO bookDAO = new DatabaseBookDAO(dbConnection);
+	            
+	            factory = new CustomDatabaseDAOFactory(dbConnection, bookDAO);
+	
+	        } else if ("CSV".equalsIgnoreCase(dataSourceType)) {
+	            factory = DAOFactory.getFactory("CSV", null);
+	        } else {
+	            throw new IllegalArgumentException("Tipo di data source non valido: " + dataSourceType);
+	        }
+	
+	        // --- Impostazione factory globale ---
+	        DAOFactory.setActiveFactory(factory);
+	
+	        // --- Registrazione observer ---
+	        wishlistObservable.addObserver(new WishlistEmailObserver());
             ApplicationGUI.setDaoFactory(factory);
             ApplicationGUI.launchApp(args);
-        } else if ("CLI".equalsIgnoreCase(viewType)) {
-            ApplicationCLI.start();
+        } else if ("DEMO".equalsIgnoreCase(viewType)) {
+            factory = new InMemoryDAOFactory();
+            DAOFactory.setActiveFactory(factory);
+
+            ApplicationCLI.start(factory);
         } else {
             throw new IllegalArgumentException("Tipo di view non valido: " + viewType);
         }

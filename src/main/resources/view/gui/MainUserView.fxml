@@ -28,12 +28,10 @@
                        </HBox>
                    </HBox>
                </HBox>
-            <VBox alignment="CENTER" maxHeight="-Infinity" prefHeight="50.0">
-               <children>
-                      <Label styleClass="profile-over-text" text="Ciao," />
-                      <Label fx:id="userLabel" styleClass="profile-text" text="User" />
-               </children>
-            </VBox>
+            
+            <!-- Solo pulsante logout a destra -->
+            <Button fx:id="logoutButton" onAction="#handleLogout" styleClass="logout-button" text="Logout" />
+            
             </HBox>
         </VBox>
     </top>

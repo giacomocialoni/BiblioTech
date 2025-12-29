@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.CreateBookControllerGUI;
 
 public class CreateBookState extends SecondaryState {
@@ -12,7 +12,7 @@ public class CreateBookState extends SecondaryState {
     @Override
     public void onEnter() {
         CreateBookControllerGUI controller = stateManager.getStageManager()
-            .<CreateBookControllerGUI>loadContent(StageManager.CREATE_BOOK_VIEW);
+            .<CreateBookControllerGUI>loadContent(StageManagerGUI.CREATE_BOOK_VIEW);
         if (controller != null) {
             controller.setStateManager(stateManager);
         }

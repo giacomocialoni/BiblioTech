@@ -1,9 +1,6 @@
 package controller.gui;
 
 import app.Session;
-import app.state.AppState;
-import app.state.CatalogoState;
-import app.state.CercaState;
 import app.state.ConfirmLoanState;
 import app.state.ConfirmPurchaseState;
 import app.state.ErrorState;

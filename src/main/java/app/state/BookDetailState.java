@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.BookDetailControllerGUI;
 
 /**
@@ -19,7 +19,7 @@ public class BookDetailState extends DetailState {
     @Override
     public void onEnter() {
         BookDetailControllerGUI controller = stateManager.getStageManager()
-            .<BookDetailControllerGUI>loadContent(StageManager.BOOK_DETAIL_VIEW);
+            .<BookDetailControllerGUI>loadContent(StageManagerGUI.BOOK_DETAIL_VIEW);
         if (controller != null) {
             controller.setStateManager(stateManager);
             controller.loadBook(bookId);

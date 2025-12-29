@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.ReturnLoanControllerGUI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +16,7 @@ public class ReturnLoanState extends PrimaryState {
     @Override
     protected void loadContent() {
         ReturnLoanControllerGUI controllerReturnLoan =
-                stateManager.getStageManager().<ReturnLoanControllerGUI>loadContent(StageManager.RETURN_LOANS_VIEW);
+                stateManager.getStageManager().<ReturnLoanControllerGUI>loadContent(StageManagerGUI.RETURN_LOANS_VIEW);
 
         if (controllerReturnLoan != null) {
             try {

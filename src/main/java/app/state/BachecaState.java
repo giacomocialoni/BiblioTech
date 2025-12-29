@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.BachecaControllerGUI;
 
 public class BachecaState extends PrimaryState {
@@ -12,7 +12,7 @@ public class BachecaState extends PrimaryState {
     @Override
     protected void loadContent() {
         BachecaControllerGUI controllerBacheca =
-            stateManager.getStageManager().<BachecaControllerGUI>loadContent(StageManager.BACHECA_VIEW);
+            stateManager.getStageManager().<BachecaControllerGUI>loadContent(StageManagerGUI.BACHECA_VIEW);
 
         if (controllerBacheca != null) {
             controllerBacheca.setStateManager(stateManager);

@@ -62,9 +62,6 @@
                                   </HBox>
                            </children>
                         </HBox>
-                  
-                                            <!-- Logout -->
-                          <Button fx:id="logoutButton" onAction="#handleLogout" styleClass="login-button" text="Logout" />
                         </children>
                     </VBox>
                   

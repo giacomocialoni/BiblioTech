@@ -43,7 +43,8 @@ public class CercaController {
     public List<BookBean> searchBooks(String searchText, String searchMode, String category,
                                       String yearFrom, String yearTo, boolean includeUnavailable) {
         try {
-            List<Book> books = bookDAO.getSearchedBooks(searchText, searchMode, category, yearFrom, yearTo, includeUnavailable);
+            List<Book> books = bookDAO.searchBooks(searchText, searchMode, category, 
+                                                   yearFrom, yearTo, includeUnavailable);
 
             return books.stream().map(book -> {
                 BookBean bean = new BookBean();
@@ -52,7 +53,9 @@ public class CercaController {
                     bean.setTitle(book.getTitle());
                     bean.setAuthor(book.getAuthor());
                     bean.setCategory(book.getCategory());
-                    bean.setImagePath(book.getImagePath());
+                    if (book.getImagePath() != null) {
+                        bean.setImagePath(book.getImagePath());
+                    }
                     bean.setStock(book.getStock());
                 } catch (Exception e) {
                     logger.warn("Dati libro non validi: " + book.getId(), e);

@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.ReservationControllerGUI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +16,7 @@ public class ReservationState extends PrimaryState {
     @Override
     protected void loadContent() {
         ReservationControllerGUI controllerReservation =
-                stateManager.getStageManager().<ReservationControllerGUI>loadContent(StageManager.RESERVATION_VIEW);
+                stateManager.getStageManager().<ReservationControllerGUI>loadContent(StageManagerGUI.RESERVATION_VIEW);
 
         if (controllerReservation != null) {
             try {

@@ -27,7 +27,7 @@
 						</HBox>
                    </HBox>
                </HBox>
-            <Button fx:id="logoutButton" mnemonicParsing="false" onAction="#handleLogout" prefWidth="113.0" styleClass="login-button" text="Logout" textAlignment="CENTER" />
+            <Button fx:id="logoutButton" mnemonicParsing="false" onAction="#handleLogout" prefWidth="113.0" styleClass="logout-button" text="Logout" textAlignment="CENTER" />
             </HBox>
         </VBox>
     </top>

@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.ProfiloControllerGUI;
 
 public class ProfiloState extends PrimaryState {
@@ -12,7 +12,7 @@ public class ProfiloState extends PrimaryState {
     @Override
     protected void loadContent() {
         ProfiloControllerGUI controllerProfilo =
-            stateManager.getStageManager().<ProfiloControllerGUI>loadContent(StageManager.PROFILO_VIEW);
+            stateManager.getStageManager().<ProfiloControllerGUI>loadContent(StageManagerGUI.PROFILO_VIEW);
 
         if (controllerProfilo != null) {
             controllerProfilo.setStateManager(stateManager);

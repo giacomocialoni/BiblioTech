@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.LoginControllerGUI;
 
 /**
@@ -25,7 +25,7 @@ public class LoginState extends AuthState {
     @Override
     public void onEnter() {
         LoginControllerGUI controller = stateManager.getStageManager()
-            .<LoginControllerGUI>loadContent(StageManager.LOGIN_VIEW);
+            .<LoginControllerGUI>loadContent(StageManagerGUI.LOGIN_VIEW);
         if (controller != null) {
             controller.setStateManager(stateManager);
             if (onLoginSuccess != null) {

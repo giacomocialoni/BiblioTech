@@ -48,13 +48,17 @@ public class CatalogoController {
             bean.setTitle(book.getTitle());
             bean.setAuthor(book.getAuthor());
             bean.setCategory(book.getCategory());
-            bean.setImagePath(book.getImagePath());
             bean.setStock(book.getStock());
+
+            if (book.getImagePath() != null) {
+                bean.setImagePath(book.getImagePath());
+            }
+
             return bean;
 
         } catch (IncorrectDataException e) {
             logger.error("Dati non validi nel Book id={}", book.getId(), e);
-            return null; // oppure lanci RuntimeException
+            return null;
         }
     }
 }

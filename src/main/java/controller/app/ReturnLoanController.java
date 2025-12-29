@@ -33,7 +33,7 @@ public class ReturnLoanController {
     // ===================== GET =====================
     public List<LoanBean> getAllLoanedLoans() {
         try {
-            return loanDAO.getAllLoanedLoans().stream()
+            return loanDAO.getAllActiveLoans().stream()
                     .map(this::toLoanBean)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
@@ -61,7 +61,7 @@ public class ReturnLoanController {
             return loanDAO.searchLoansByBook(searchText).stream()
                     .map(this::toLoanBean)
                     .filter(Objects::nonNull)
-                    .filter(loan -> loan.getStatus() == LoanStatus.LOANED) // filtriamo solo LOANED
+                    .filter(loan -> loan.getStatus() == LoanStatus.LOANED)
                     .collect(Collectors.toList());
         } catch (DAOException e) {
             logger.error("Errore DAO ricerca prestiti LOANED per libro", e);
@@ -96,7 +96,6 @@ public class ReturnLoanController {
             bean.setLoanedDate(loan.getLoanedDate());
             bean.setReturningDate(loan.getReturningDate());
 
-            // Recupera il Book dal DAO tramite bookId
             try {
                 Book book = bookDAO.getBookById(loan.getBookId());
                 if (book != null) {

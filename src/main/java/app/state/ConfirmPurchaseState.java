@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import bean.BookBean;
 import controller.gui.PurchaseControllerGUI;
 
@@ -18,7 +18,7 @@ public class ConfirmPurchaseState extends SecondaryState {
     @Override
     public void onEnter() {
         PurchaseControllerGUI controller = stateManager.getStageManager()
-            .<PurchaseControllerGUI>loadContent(StageManager.CONFIRM_PURCHASE_VIEW);
+            .<PurchaseControllerGUI>loadContent(StageManagerGUI.CONFIRM_PURCHASE_VIEW);
         if (controller != null) {
             controller.setStateManager(stateManager);
             controller.setPurchaseData(book, quantity);

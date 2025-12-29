@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.WishlistControllerGUI;
 
 public class WishlistState extends PrimaryState {
@@ -12,7 +12,7 @@ public class WishlistState extends PrimaryState {
     @Override
     protected void loadContent() {
         WishlistControllerGUI controllerWishlist =
-            stateManager.getStageManager().<WishlistControllerGUI>loadContent(StageManager.WISHLIST_VIEW);
+            stateManager.getStageManager().<WishlistControllerGUI>loadContent(StageManagerGUI.WISHLIST_VIEW);
 
         if (controllerWishlist != null) {
             controllerWishlist.setStateManager(stateManager);

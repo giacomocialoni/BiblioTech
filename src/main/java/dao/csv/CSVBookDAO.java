@@ -4,8 +4,6 @@ import dao.BookDAO;
 import exception.DAOException;
 import exception.RecordNotFoundException;
 import model.Book;
-import model.Loan;
-import model.Purchase;
 
 import java.io.*;
 import java.net.URL;
@@ -33,36 +31,45 @@ public class CSVBookDAO implements BookDAO {
         return books.stream()
                 .filter(book -> book.getId() == id)
                 .findFirst()
-                .orElseThrow(() -> 
-                    new RecordNotFoundException("Libro con ID " + id + " non trovato"));
+                .orElseThrow(() -> new RecordNotFoundException("Libro con ID " + id + " non trovato"));
     }
     
     @Override
     public void addBook(Book book) throws DAOException {
+        // Genera ID se non presente
+        if (book.getId() <= 0) {
+            int maxId = books.stream().mapToInt(Book::getId).max().orElse(0);
+            book.setId(maxId + 1);
+        }
         books.add(book);
         saveBooks();
     }
     
     @Override
     public void updateBook(Book book) throws DAOException, RecordNotFoundException {
-        Book existingBook = getBookById(book.getId());
-        books.remove(existingBook);
-        books.add(book);
-        saveBooks();
+        for (int i = 0; i < books.size(); i++) {
+            if (books.get(i).getId() == book.getId()) {
+                books.set(i, book);
+                saveBooks();
+                return;
+            }
+        }
+        throw new RecordNotFoundException("Libro con ID " + book.getId() + " non trovato");
     }
     
     @Override
     public void deleteBook(int id) throws DAOException, RecordNotFoundException {
-        Book book = getBookById(id);
-        books.remove(book);
+        boolean removed = books.removeIf(book -> book.getId() == id);
+        if (!removed) {
+            throw new RecordNotFoundException("Libro con ID " + id + " non trovato");
+        }
         saveBooks();
     }
     
     @Override
-    public List<Book> getSearchedBooks(String searchText, String searchMode,
-                                       String category, String yearFrom,
-                                       String yearTo, boolean includeUnavailable) 
-            throws DAOException {
+    public List<Book> searchBooks(String searchText, String searchMode, String category,
+                                  String yearFrom, String yearTo, boolean includeUnavailable) 
+                                  throws DAOException {
         
         return books.stream()
                 .filter(book -> includeUnavailable || book.getStock() > 0)
@@ -74,7 +81,7 @@ public class CSVBookDAO implements BookDAO {
                             int yearFromInt = Integer.parseInt(yearFrom);
                             if (book.getYear() < yearFromInt) return false;
                         } catch (NumberFormatException e) {
-                            // Ignora formato non valido
+                            return true;
                         }
                     }
                     return true;
@@ -85,7 +92,7 @@ public class CSVBookDAO implements BookDAO {
                             int yearToInt = Integer.parseInt(yearTo);
                             if (book.getYear() > yearToInt) return false;
                         } catch (NumberFormatException e) {
-                            // Ignora formato non valido
+                            return true;
                         }
                     }
                     return true;
@@ -95,21 +102,49 @@ public class CSVBookDAO implements BookDAO {
     }
     
     @Override
-    public List<Book> getPurchasedBooks(String userEmail) throws DAOException {
-        // Invece di lanciare eccezione, restituisci lista vuota per CSV
-        return new ArrayList<>();
+    public void updateStock(int bookId, int quantity) throws DAOException {
+        books.stream()
+                .filter(book -> book.getId() == bookId)
+                .findFirst()
+                .ifPresent(book -> {
+                    int newStock = Math.max(0, book.getStock() + quantity);
+                    book.setStock(newStock);
+                    try {
+                        saveBooks();
+                    } catch (DAOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
     
     @Override
-    public List<Purchase> getPurchasesByUser(String userEmail) throws DAOException {
-        // Per CSV, restituisci lista vuota
-        return new ArrayList<>();
+    public boolean isBookAvailable(int bookId) throws DAOException {
+        return books.stream()
+                .filter(book -> book.getId() == bookId)
+                .findFirst()
+                .map(book -> book.getStock() > 0)
+                .orElse(false);
     }
     
     @Override
-    public List<Loan> getLoanedBooks(String userEmail) throws DAOException {
-        // Per CSV, restituisci lista vuota
-        return new ArrayList<>();
+    public List<Book> getBooksByCategory(String category) throws DAOException {
+        return books.stream()
+                .filter(book -> book.getCategory().equalsIgnoreCase(category))
+                .toList();
+    }
+    
+    @Override
+    public List<Book> getBooksByAuthor(String author) throws DAOException {
+        return books.stream()
+                .filter(book -> book.getAuthor().toLowerCase().contains(author.toLowerCase()))
+                .toList();
+    }
+    
+    @Override
+    public List<Book> getAvailableBooks() throws DAOException {
+        return books.stream()
+                .filter(book -> book.getStock() > 0)
+                .toList();
     }
     
     private boolean matchSearch(Book book, String searchText, String searchMode) {
@@ -149,11 +184,30 @@ public class CSVBookDAO implements BookDAO {
                 }
             }
             
-            throw new DAOException("File books.csv non trovato in: " + FILE_PATH);
+            // Se il file non esiste, crea uno di esempio
+            createSampleData();
+            saveBooks();
             
         } catch (IOException e) {
             throw new DAOException("Errore durante il caricamento dei libri", e);
         }
+    }
+    
+    private void createSampleData() {
+        books.add(new Book(
+                1,
+                "Clean Code",
+                "Robert C. Martin",
+                "Programming",
+                2008,
+                "Prentice Hall",
+                464,
+                "9780132350884",
+                5,
+                "A Handbook of Agile Software Craftsmanship",
+                null,
+                39.99
+        ));
     }
     
     private void loadFromReader(BufferedReader reader) throws IOException {
@@ -196,7 +250,6 @@ public class CSVBookDAO implements BookDAO {
     }
     
     private Book parseBook(String line, int lineNumber) {
-        // Usa un parser CSV semplice che gestisca le virgolette
         List<String> fields = parseCSVLine(line);
         
         if (fields.size() < 12) {
@@ -205,23 +258,19 @@ public class CSVBookDAO implements BookDAO {
         }
         
         try {
-            // Ordine dei campi BASATO SUL TUO FILE CSV:
-            // 0: id, 1: title, 2: author, 3: year, 4: plot, 5: image_path, 
-            // 6: publisher, 7: pages, 8: isbn, 9: stock, 10: category, 11: price
-            
             return new Book(
-                Integer.parseInt(fields.get(0).trim()),      // id
-                fields.get(1).trim(),                        // title
-                fields.get(2).trim(),                        // author
-                fields.get(10).trim(),                       // category (POSIZIONE 10)
-                Integer.parseInt(fields.get(3).trim()),      // year (POSIZIONE 3)
-                fields.get(6).trim(),                        // publisher (POSIZIONE 6)
-                Integer.parseInt(fields.get(7).trim()),      // pages (POSIZIONE 7)
-                fields.get(8).trim(),                        // isbn (POSIZIONE 8)
-                Integer.parseInt(fields.get(9).trim()),      // stock (POSIZIONE 9)
-                fields.get(4).trim(),                        // plot (POSIZIONE 4)
-                fields.get(5).trim(),                        // image_path (POSIZIONE 5)
-                Double.parseDouble(fields.get(11).trim())    // price (POSIZIONE 11)
+                Integer.parseInt(fields.get(0).trim()),
+                fields.get(1).trim(),
+                fields.get(2).trim(),
+                fields.get(3).trim(),
+                Integer.parseInt(fields.get(4).trim()),
+                fields.get(5).trim(),
+                Integer.parseInt(fields.get(6).trim()),
+                fields.get(7).trim(),
+                Integer.parseInt(fields.get(8).trim()),
+                fields.get(9).trim(),
+                fields.get(10).trim(),
+                Double.parseDouble(fields.get(11).trim())
             );
         } catch (NumberFormatException e) {
             System.err.println("Errore formato numerico in riga " + lineNumber + ": " + line);
@@ -234,10 +283,6 @@ public class CSVBookDAO implements BookDAO {
         }
     }
     
-    /**
-     * Metodo di supporto per parsare correttamente una linea CSV
-     * Gestisce virgolette e virgole all'interno dei campi
-     */
     private List<String> parseCSVLine(String line) {
         List<String> fields = new ArrayList<>();
         StringBuilder currentField = new StringBuilder();
@@ -247,24 +292,21 @@ public class CSVBookDAO implements BookDAO {
             char c = line.charAt(i);
             
             if (c == '"') {
-                // Controlla se è una virgoletta doppia (escape)
                 if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
                     currentField.append('"');
-                    i++; // Salta la prossima virgoletta
+                    i++;
                 } else {
                     inQuotes = !inQuotes;
                 }
             } else if (c == ',' && !inQuotes) {
                 fields.add(currentField.toString());
-                currentField.setLength(0); // Reset
+                currentField.setLength(0);
             } else {
                 currentField.append(c);
             }
         }
         
-        // Aggiungi l'ultimo campo
         fields.add(currentField.toString());
-        
         return fields;
     }
     

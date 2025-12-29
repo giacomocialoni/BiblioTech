@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.ErrorControllerGUI;
 
 public class ErrorState extends SecondaryState {
@@ -15,7 +15,7 @@ public class ErrorState extends SecondaryState {
     @Override
     public void onEnter() {
         ErrorControllerGUI controller = stateManager.getStageManager()
-            .<ErrorControllerGUI>loadContent(StageManager.ERROR_VIEW);
+            .<ErrorControllerGUI>loadContent(StageManagerGUI.ERROR_VIEW);
         if (controller != null) {
             controller.setStateManager(stateManager);
             controller.setErrorData(errorMessage);

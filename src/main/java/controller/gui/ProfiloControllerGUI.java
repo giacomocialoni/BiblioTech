@@ -1,7 +1,6 @@
 package controller.gui;
 
 import app.Session;
-import app.state.MainGuestState;
 import app.state.StateManager;
 import controller.app.ProfiloController;
 import javafx.fxml.FXML;
@@ -140,10 +139,5 @@ public class ProfiloControllerGUI {
             loansBox.getChildren().add(card);
         }
     }
-
-    @FXML
-    private void handleLogout() {
-        Session.getInstance().logout();
-        stateManager.setState(new MainGuestState(stateManager));
-    }
+    
 }

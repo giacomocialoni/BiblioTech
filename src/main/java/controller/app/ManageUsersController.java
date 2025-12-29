@@ -34,12 +34,10 @@ public class ManageUsersController {
         this.loanDAO = DAOFactory.getActiveFactory().getLoanDAO();
         this.purchaseDAO = DAOFactory.getActiveFactory().getPurchaseDAO();
     }
-
-    // ===== METODI PRINCIPALI PER IL GUI =====
     
     public List<UserDisplayDTO> getAllUsersForDisplay() {
         try {
-            List<User> users = userDAO.getLoggedUsers();
+            List<User> users = userDAO.getAllUsers();
             return users.stream()
                     .map(this::createUserDisplayDTO)
                     .collect(Collectors.toList());
@@ -51,7 +49,7 @@ public class ManageUsersController {
     
     public List<UserDisplayDTO> searchUsersForDisplay(String searchText) {
         try {
-            List<User> filteredUsers = userDAO.getLoggedUsers();
+            List<User> filteredUsers = userDAO.getAllUsers();
             
             if (searchText != null && !searchText.trim().isEmpty()) {
                 String lower = searchText.toLowerCase();
@@ -184,7 +182,7 @@ public class ManageUsersController {
     
     public UserBean getUserByEmail(String email) {
         try {
-            User user = userDAO.getUserByEmail(email);
+            User user = userDAO.getUser(email);
             return mapUserToBean(user);
         } catch (DAOException e) {
             logger.warn("Utente non trovato: {}", email, e);
@@ -194,7 +192,7 @@ public class ManageUsersController {
     
     public int getTotalUsersCount() {
         try {
-            return userDAO.getLoggedUsers().size();
+            return userDAO.getAllUsers().size();
         } catch (DAOException e) {
             logger.error("Errore nel conteggio utenti", e);
             return 0;
@@ -216,7 +214,7 @@ public class ManageUsersController {
     
     public List<UserBean> getLoggedUsers() {
         try {
-            return mapUsersToBeans(userDAO.getLoggedUsers());
+            return mapUsersToBeans(userDAO.getAllUsers());
         } catch (DAOException e) {
             logger.error("Errore DAO recupero utenti loggati", e);
             return List.of();

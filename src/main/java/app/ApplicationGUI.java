@@ -20,7 +20,7 @@ public class ApplicationGUI extends Application {
             throw new IllegalStateException("DAOFactory non impostata. Chiama setDaoFactory() prima di launchApp().");
         }
         
-        StageManager stageManager = new StageManager(primaryStage, daoFactory);
+        StageManagerGUI stageManager = new StageManagerGUI(primaryStage, daoFactory);
         StateManager stateManager = stageManager.getStateManager();
         
         // All'avvio carichiamo il MainGuestState (che caricherà automaticamente il Catalogo)

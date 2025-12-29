@@ -3,21 +3,21 @@ package app.state;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import dao.factory.DAOFactory;
-import app.StageManager;
+import app.StageManagerGUI;
 
 public class StateManager {
     private final DAOFactory daoFactory;
-    private final StageManager stageManager;
+    private final StageManagerGUI stageManager;
     private AppState currentState;
     private final Deque<AppState> history = new ArrayDeque<>();
     private StateChangeListener listener;
     
-    public StateManager(DAOFactory daoFactory, StageManager stageManager) {
+    public StateManager(DAOFactory daoFactory, StageManagerGUI stageManager) {
         this.daoFactory = daoFactory;
         this.stageManager = stageManager;
     }
     
-    public StageManager getStageManager() {
+    public StageManagerGUI getStageManager() {
         return stageManager;
     }
     

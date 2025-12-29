@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.SuccessControllerGUI;
 
 public class SuccessState extends SecondaryState {
@@ -15,7 +15,7 @@ public class SuccessState extends SecondaryState {
     @Override
     public void onEnter() {
         SuccessControllerGUI controller = stateManager.getStageManager()
-            .<SuccessControllerGUI>loadContent(StageManager.SUCCESS_VIEW);
+            .<SuccessControllerGUI>loadContent(StageManagerGUI.SUCCESS_VIEW);
         if (controller != null) {
             controller.setStateManager(stateManager);
             controller.setSuccessData(successMessage);

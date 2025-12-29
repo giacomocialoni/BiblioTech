@@ -18,8 +18,8 @@ import app.state.StateManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StageManager implements StateChangeListener {
-    private static final Logger logger = LoggerFactory.getLogger(StageManager.class);
+public class StageManagerGUI implements StateChangeListener {
+    private static final Logger logger = LoggerFactory.getLogger(StageManagerGUI.class);
     
     private final StateManager stateManager;
     private final Stage primaryStage;
@@ -60,7 +60,7 @@ public class StageManager implements StateChangeListener {
     public static final String LOGIN_VIEW = BASE_PATH + "LoginView.fxml";
     public static final String SIGN_IN_VIEW = BASE_PATH + "SignInView.fxml";
     
-    public StageManager(Stage stage, DAOFactory daoFactory) {
+    public StageManagerGUI(Stage stage, DAOFactory daoFactory) {
         this.primaryStage = stage;
         this.stateManager = new StateManager(daoFactory, this);
         this.stateManager.setStateChangeListener(this);
@@ -96,7 +96,7 @@ public class StageManager implements StateChangeListener {
             
             Scene scene = new Scene(root);
             primaryStage.setScene(scene);
-            primaryStage.setTitle("Library - Guest");
+            primaryStage.setTitle("BiblioTech - Guest");
             primaryStage.sizeToScene();
             primaryStage.setMinWidth(1000);
             primaryStage.setMinHeight(700);
@@ -122,7 +122,7 @@ public class StageManager implements StateChangeListener {
             
             Scene scene = new Scene(root);
             primaryStage.setScene(scene);
-            primaryStage.setTitle("Library - User");
+            primaryStage.setTitle("BiblioTech - User");
             primaryStage.sizeToScene();
             primaryStage.setMinWidth(1000);
             primaryStage.setMinHeight(700);
@@ -150,7 +150,7 @@ public class StageManager implements StateChangeListener {
             
             Scene scene = new Scene(root);
             primaryStage.setScene(scene);
-            primaryStage.setTitle("Library - Admin");
+            primaryStage.setTitle("BiblioTech - Admin");
             primaryStage.sizeToScene();
             primaryStage.setMinWidth(1000);
             primaryStage.setMinHeight(700);

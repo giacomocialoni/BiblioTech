@@ -38,7 +38,7 @@ public class WishlistController {
        ===================== */
     public UserBean getUser(String email) {
         try {
-            User user = userDAO.getUserByEmail(email);
+            User user = userDAO.getUser(email);
             return toUserBean(user);
         } catch (RecordNotFoundException e) {
             logger.warn("Utente non trovato: {}", email);

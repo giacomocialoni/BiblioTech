@@ -1,6 +1,6 @@
 package app.state;
 
-import app.StageManager;
+import app.StageManagerGUI;
 import controller.gui.CatalogoControllerGUI;
 
 public class CatalogoState extends PrimaryState {
@@ -12,7 +12,7 @@ public class CatalogoState extends PrimaryState {
     @Override
     protected void loadContent() {
         CatalogoControllerGUI controllerCatalogo =
-            stateManager.getStageManager().<CatalogoControllerGUI>loadContent(StageManager.CATALOGO_VIEW);
+            stateManager.getStageManager().<CatalogoControllerGUI>loadContent(StageManagerGUI.CATALOGO_VIEW);
 
         if (controllerCatalogo != null) {
             controllerCatalogo.setStateManager(stateManager);

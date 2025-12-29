@@ -44,8 +44,7 @@ public class ReservationController {
 
     public List<PurchaseBean> getAllReservedPurchases() {
         try {
-            return purchaseDAO.getAllPurchases().stream()
-                    .filter(Purchase::isReserved)
+            return purchaseDAO.getAllReservedPurchases().stream()
                     .map(this::toPurchaseBean)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
@@ -83,12 +82,8 @@ public class ReservationController {
     // ===================== SEARCH =====================
 
     public List<UserBean> searchUsers(String text) {
-        String search = text.toLowerCase();
         try {
-            return userDAO.getAllUsers().stream()
-                    .filter(u -> u.getEmail().toLowerCase().contains(search)
-                            || u.getFirstName().toLowerCase().contains(search)
-                            || u.getLastName().toLowerCase().contains(search))
+            return userDAO.searchUsers(text).stream()
                     .map(this::toUserBean)
                     .collect(Collectors.toList());
         } catch (DAOException e) {
@@ -99,7 +94,7 @@ public class ReservationController {
 
     public List<PurchaseBean> searchPurchasesByUser(String text) {
         try {
-            return purchaseDAO.searchReservedPurchasesByUser(text).stream()
+            return purchaseDAO.searchPurchasesByUser(text).stream()
                     .map(this::toPurchaseBean)
                     .filter(Objects::nonNull)
                     .toList();
@@ -111,7 +106,7 @@ public class ReservationController {
 
     public List<PurchaseBean> searchPurchasesByBook(String text) {
         try {
-            return purchaseDAO.searchReservedPurchasesByBook(text).stream()
+            return purchaseDAO.searchPurchasesByBook(text).stream()
                     .map(this::toPurchaseBean)
                     .filter(Objects::nonNull)
                     .toList();
@@ -123,6 +118,7 @@ public class ReservationController {
 
     public List<LoanBean> searchLoansByUser(String text) {
         try {
+            // CORREZIONE: ora si chiama searchLoansByUser
             return loanDAO.searchLoansByUser(text).stream()
                     .map(this::toLoanBean)
                     .filter(Objects::nonNull)
@@ -162,7 +158,7 @@ public class ReservationController {
 
     public boolean acceptLoan(int loanId) {
         try {
-            loanDAO.acceptedLoan(loanId);
+            loanDAO.acceptLoan(loanId);
             return true;
         } catch (RecordNotFoundException e) {
             logger.warn("Prestito non trovato id={}", loanId);
@@ -175,16 +171,7 @@ public class ReservationController {
 
     public void updateBookStock(int bookId, int quantityChange) {
         try {
-            Book book = bookDAO.getBookById(bookId);
-            if (book == null) {
-                logger.warn("Libro non trovato per aggiornamento stock id={}", bookId);
-                return;
-            }
-            int newStock = Math.max(0, book.getStock() + quantityChange);
-            book.setStock(newStock);
-            bookDAO.updateBook(book);
-        } catch (RecordNotFoundException e) {
-            logger.warn("Libro non trovato durante update stock id={}", bookId);
+            bookDAO.updateStock(bookId, quantityChange);
         } catch (DAOException e) {
             logger.warn("Errore DAO durante update stock id={}", bookId);
         }
@@ -204,15 +191,15 @@ public class ReservationController {
         if (book == null) return null;
         BookBean bean = new BookBean();
         try {
-        	bean.setId(book.getId());
-			bean.setTitle(book.getTitle());
-			bean.setAuthor(book.getAuthor());
-			bean.setPrice(book.getPrice());
-			bean.setImagePath(book.getImagePath());
-		} catch (IncorrectDataException e) {
+            bean.setId(book.getId());
+            bean.setTitle(book.getTitle());
+            bean.setAuthor(book.getAuthor());
+            bean.setPrice(book.getPrice());
+            bean.setImagePath(book.getImagePath());
+        } catch (IncorrectDataException e) {
             logger.warn("Errore mapping book", e);
             return null;
-		}
+        }
         return bean;
     }
 
@@ -227,7 +214,6 @@ public class ReservationController {
             bean.setStatus(purchase.getStatus());
             bean.setStatusDate(purchase.getStatusDate());
 
-            // Recupera il Book dal DAO e mappa
             Book bookModel = bookDAO.getBookById(purchase.getBookId());
             bean.setBook(mapBookToBean(bookModel));
 
@@ -250,7 +236,6 @@ public class ReservationController {
             bean.setLoanedDate(loan.getLoanedDate());
             bean.setReturningDate(loan.getReturningDate());
 
-            // Recupera il Book dal DAO e mappa
             Book bookModel = bookDAO.getBookById(loan.getBookId());
             bean.setBook(mapBookToBean(bookModel));
 

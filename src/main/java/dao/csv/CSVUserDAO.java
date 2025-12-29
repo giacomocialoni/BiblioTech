@@ -15,7 +15,7 @@ public class CSVUserDAO implements UserDAO {
     private static final String FILE_PATH = "src/main/resources/data/users.csv";
     
     @Override
-    public User getUserByEmail(String email) throws DAOException, RecordNotFoundException {
+    public User getUser(String email) throws DAOException, RecordNotFoundException {
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(FILE_PATH))) {
             reader.readLine(); // Skip header
             
@@ -37,11 +37,6 @@ public class CSVUserDAO implements UserDAO {
     @Override
     public List<User> getAllUsers() throws DAOException {
         return getUsersByRole(null);
-    }
-    
-    @Override
-    public List<User> getLoggedUsers() throws DAOException {
-        return getUsersByRole("logged_user");
     }
     
     @Override

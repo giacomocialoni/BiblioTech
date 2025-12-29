@@ -1,23 +1,28 @@
 package dao;
 
 import model.Book;
-import model.Loan;
-import model.Purchase;
-
-import java.util.List;
-
 import exception.DAOException;
 import exception.RecordNotFoundException;
 
-public interface BookDAO {
+import java.util.List;
 
+public interface BookDAO {
+    // Operazioni CRUD
     List<Book> getAllBooks() throws DAOException;
     Book getBookById(int id) throws DAOException, RecordNotFoundException;
     void addBook(Book book) throws DAOException;
     void updateBook(Book book) throws DAOException, RecordNotFoundException;
     void deleteBook(int id) throws DAOException, RecordNotFoundException;
-    List<Loan> getLoanedBooks(String userEmail) throws DAOException;
-    List<Book> getSearchedBooks(String searchText, String searchMode, String category, String yearFrom, String yearTo, boolean includeUnavailable) throws DAOException;
-    List<Book> getPurchasedBooks(String userEmail) throws DAOException;
-    List<Purchase> getPurchasesByUser(String userEmail) throws DAOException;
+    
+    // Ricerca e filtri
+    List<Book> searchBooks(String searchText, String searchMode, String category,
+                          String yearFrom, String yearTo, boolean includeUnavailable) 
+                          throws DAOException;
+    
+    // Metodi di utilità
+    void updateStock(int bookId, int quantity) throws DAOException;
+    boolean isBookAvailable(int bookId) throws DAOException;
+    List<Book> getBooksByCategory(String category) throws DAOException;
+    List<Book> getBooksByAuthor(String author) throws DAOException;
+    List<Book> getAvailableBooks() throws DAOException;
 }
