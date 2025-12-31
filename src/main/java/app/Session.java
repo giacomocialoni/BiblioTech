@@ -24,10 +24,43 @@ public class Session {
     }
 
     public boolean isLoggedIn() {
-        return loggedUser != null;
+        boolean result = loggedUser != null;
+        return result;
     }
 
     public Account getLoggedUser() {
         return loggedUser;
+    }
+    
+    // Metodi per i ruoli specifici: admin, logged_user, guest
+    public boolean isGuest() {
+        return !isLoggedIn();
+    }
+    
+    public boolean isUser() {
+        if (!isLoggedIn()) {
+            return false;
+        }
+        String role = loggedUser.getRole();
+        boolean result = "logged_user".equals(role);
+        return result;
+    }
+    
+    public boolean isAdmin() {
+        if (!isLoggedIn()) return false;
+        String role = loggedUser.getRole();
+        return "admin".equals(role);
+    }
+    
+    public String getUserEmail() {
+        return isLoggedIn() ? loggedUser.getEmail() : null;
+    }
+    
+    public String getUserRole() {
+        if (!isLoggedIn()) {
+            return null;
+        }
+        String role = loggedUser.getRole();
+        return role;
     }
 }

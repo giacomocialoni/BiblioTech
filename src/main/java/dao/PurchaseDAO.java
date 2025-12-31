@@ -10,7 +10,6 @@ public interface PurchaseDAO {
     // Operazioni CRUD
     void addPurchase(String userEmail, int bookId) throws DAOException;
     void updatePurchaseStatus(int purchaseId, String status) throws DAOException, RecordNotFoundException;
-    void deletePurchase(int purchaseId) throws DAOException, RecordNotFoundException;
     
     // Recupero acquisti
     Purchase getPurchaseById(int purchaseId) throws DAOException, RecordNotFoundException;
@@ -25,6 +24,7 @@ public interface PurchaseDAO {
     
     // Operazioni business
     void acceptPurchase(int purchaseId) throws DAOException, RecordNotFoundException;
+    void rejectPurchase(int purchaseId) throws DAOException, RecordNotFoundException;
     
     // Ricerca
     List<Purchase> searchPurchasesByUser(String searchText) throws DAOException;

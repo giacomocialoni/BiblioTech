@@ -41,40 +41,23 @@ public class ReservationCardFactory {
     }
 
     private HBox createReservationCard(BookBean book, String userEmail, String type, String detail1, String detail2, Runnable onAccept, Runnable onReject) {
-		// Copertina del libro a sinistra
-		ImageView coverImage = new ImageView();
-		coverImage.setFitWidth(120);
-		coverImage.setFitHeight(160);
-		coverImage.setPreserveRatio(true);
-		
-		// Gestione dell'immagine con InputStream
-		try {
-		String imagePath = "/images/" + book.getImagePath();
-		InputStream imageStream = getClass().getResourceAsStream(imagePath);
-		if (imageStream == null) {
-		System.err.println("Immagine non trovata: " + imagePath);
-		imageStream = getClass().getResourceAsStream("/images/default.jpg");
-		}
-		
-		if (imageStream != null) {
-		Image image = new Image(imageStream);
-		coverImage.setImage(image);
-		
-		// AGGIUNGI QUESTO PER GLI ANGOLI ARROTONDATI
-		Rectangle clip = new Rectangle(coverImage.getFitWidth(), coverImage.getFitHeight());
-		clip.setArcWidth(20);
-		clip.setArcHeight(20);
-		coverImage.setClip(clip);
-		
-		imageStream.close();
-		} else {
-		System.err.println("Impossibile caricare anche l'immagine di default");
-		coverImage.setStyle("-fx-background-color: #e8dad0; -fx-border-color: #8b7355;");
-		}
-		} catch (Exception e) {
-		System.err.println("Errore nel caricamento dell'immagine: " + e.getMessage());
-		coverImage.setStyle("-fx-background-color: #e8dad0; -fx-border-color: #8b7355;");
-		}
+    	String imagePath = "/images/" + book.getImagePath();
+    	InputStream imageStream = getClass().getResourceAsStream(imagePath);
+    	if (imageStream == null) {
+    	    System.err.println("Immagine non trovata: " + imagePath);
+    	    imageStream = getClass().getResourceAsStream("/images/default.jpg");
+    	}
+
+    	ImageView coverImage = new ImageView(new Image(imageStream));
+    	coverImage.setFitWidth(120);
+    	coverImage.setFitHeight(160);
+    	coverImage.setPreserveRatio(true);
+
+    	// clip arrotondato
+    	Rectangle clip = new Rectangle(coverImage.getFitWidth(), coverImage.getFitHeight());
+    	clip.setArcWidth(20);
+    	clip.setArcHeight(20);
+    	coverImage.setClip(clip);
 		
 		// Container per l'immagine
 		VBox imageContainer = new VBox(coverImage);

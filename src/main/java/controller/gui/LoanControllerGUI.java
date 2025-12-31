@@ -4,7 +4,7 @@ import app.state.ErrorState;
 import app.state.SuccessState;
 import bean.BookBean;
 import app.state.StateManager;
-import controller.app.LoanController;
+import controller.app.facade.UserLoanFacade;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
@@ -21,27 +21,24 @@ public class LoanControllerGUI {
 
     private StateManager stateManager;
     private BookBean book;
-    private LoanController borrowController;
+    private UserLoanFacade userLoanFacade;
 
     public void setStateManager(StateManager stateManager) {
         this.stateManager = stateManager;
-        this.borrowController = new LoanController();
+        this.userLoanFacade = new UserLoanFacade();
     }
 
-    // MODIFICATO: rimuovi il parametro previousState
     public void setBorrowData(BookBean book) {
         this.book = book;
         updateUI();
     }
 
     private void updateUI() {
-        // Popola l'interfaccia con i dati del prestito
         titleLabel.setText("Conferma Prestito");
         bookTitleLabel.setText(book.getTitle());
         durationLabel.setText("30 giorni");
         priceLabel.setText("Gratis");
         
-        // Disabilita il pulsante se stock insufficiente
         confirmButton.setDisable(book.getStock() <= 0);
         
         if (book.getStock() <= 0) {
@@ -59,7 +56,7 @@ public class LoanControllerGUI {
 
     @FXML
     private void handleConfirm() {
-        LoanResult result = borrowController.loanBook(book.getId());
+        LoanResult result = userLoanFacade.loanBook(book.getId());
         
         switch (result) {
             case SUCCESS -> {
@@ -84,6 +81,12 @@ public class LoanControllerGUI {
                 stateManager.setState(new ErrorState(
                     stateManager, 
                     "Hai prestiti scaduti da restituire prima di prenderne di nuovi."
+                ));
+            }
+            case NOT_LOGGED -> {
+                stateManager.setState(new ErrorState(
+                    stateManager,
+                    "Devi essere loggato per effettuare un prestito."
                 ));
             }
             case ERROR -> {

@@ -23,6 +23,7 @@ public class DatabaseAccountDAO implements AccountDAO {
 
     @Override
     public Account login(String email, String password) throws DAOException, RecordNotFoundException {
+        
         String sql = "SELECT * FROM users WHERE email = ? AND password = ?";
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -36,20 +37,15 @@ public class DatabaseAccountDAO implements AccountDAO {
             }
 
             String role = rs.getString("role");
+            String firstName = rs.getString("first_name");
+            String lastName = rs.getString("last_name");
+            
             if ("admin".equalsIgnoreCase(role)) {
-                return new Admin(
-                        rs.getString("email"),
-                        rs.getString("password"),
-                        rs.getString("first_name"),
-                        rs.getString("last_name")
-                );
+                Admin admin = new Admin(email, password, firstName, lastName);
+                return admin;
             } else {
-                return new User(
-                        rs.getString("email"),
-                        rs.getString("password"),
-                        rs.getString("first_name"),
-                        rs.getString("last_name")
-                );
+                User user = new User(email, password, firstName, lastName);
+                return user;
             }
         } catch (SQLException e) {
             throw new DAOException("Errore durante il login", e);

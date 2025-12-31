@@ -3,13 +3,11 @@ package controller.gui;
 import app.state.StateManager;
 import app.state.ErrorState;
 import app.state.SuccessState;
-import controller.app.ReservationController;
-import exception.DAOException;
-import exception.RecordNotFoundException;
+import controller.app.facade.AdminLoanFacade;
+import controller.app.facade.AdminPurchaseFacade;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
-import bean.BookBean;
 import bean.LoanBean;
 import bean.PurchaseBean;
 import view.components.ReservationCardFactory;
@@ -32,13 +30,14 @@ public class ReservationControllerGUI {
     @FXML private Button bookFilterButton;
 
     private StateManager stateManager;
-    private final ReservationController appController = new ReservationController();
+    private final AdminPurchaseFacade adminPurchaseFacade = new AdminPurchaseFacade();
+    private final AdminLoanFacade adminLoanFacade = new AdminLoanFacade();
     private ReservationCardFactory cardFactory;
     
     private boolean initialized = false;
     private String searchMode = "user";
 
-    public void setStateManager(StateManager stateManager) throws RecordNotFoundException, DAOException {
+    public void setStateManager(StateManager stateManager) {
         this.stateManager = stateManager;
         this.cardFactory = new ReservationCardFactory();
         
@@ -53,6 +52,9 @@ public class ReservationControllerGUI {
         showLoansCheckbox.setSelected(true);
         setUserFilter();
         initialized = true;
+        
+        // Carica le prenotazioni all'inizializzazione
+        loadAllReservations();
     }
 
     @FXML
@@ -76,9 +78,13 @@ public class ReservationControllerGUI {
         bookFilterButton.getStyleClass().remove("active");
         
         if ("user".equals(searchMode)) {
-            userFilterButton.getStyleClass().add("active");
+            if (!userFilterButton.getStyleClass().contains("active")) {
+                userFilterButton.getStyleClass().add("active");
+            }
         } else {
-            bookFilterButton.getStyleClass().add("active");
+            if (!bookFilterButton.getStyleClass().contains("active")) {
+                bookFilterButton.getStyleClass().add("active");
+            }
         }
     }
 
@@ -88,8 +94,6 @@ public class ReservationControllerGUI {
             showError("Attenzione", "Sistema non ancora inizializzato");
             return;
         }
-
-        resultsContainer.getChildren().clear();
 
         String searchText = searchField.getText().trim();
         boolean includeSales = showSalesCheckbox.isSelected();
@@ -105,21 +109,21 @@ public class ReservationControllerGUI {
 
         if (includeSales) {
             purchases = "user".equals(searchMode)
-                ? appController.searchPurchasesByUser(searchText)
-                : appController.searchPurchasesByBook(searchText);
+                ? adminPurchaseFacade.searchPurchasesByUser(searchText)
+                : adminPurchaseFacade.searchPurchasesByBook(searchText);
         }
 
         if (includeLoans) {
             loans = "user".equals(searchMode)
-                ? appController.searchLoansByUser(searchText)
-                : appController.searchLoansByBook(searchText);
+                ? adminLoanFacade.searchLoansByUser(searchText)
+                : adminLoanFacade.searchLoansByBook(searchText);
         }
 
         displayReservations(purchases, loans);
     }
 
     @FXML
-    public void handleClearFilters() throws RecordNotFoundException, DAOException {
+    public void handleClearFilters() {
         searchField.clear();
         showSalesCheckbox.setSelected(true);
         showLoansCheckbox.setSelected(true);
@@ -128,7 +132,7 @@ public class ReservationControllerGUI {
     }
 
     @FXML
-    public void handleCheckboxChange() throws RecordNotFoundException, DAOException {
+    public void handleCheckboxChange() {
         if (cardFactory != null) {
             if (searchField.getText().trim().isEmpty()) {
                 loadAllReservations();
@@ -142,16 +146,14 @@ public class ReservationControllerGUI {
         try {
             if (cardFactory == null) return;
 
-            resultsContainer.getChildren().clear();
-
             boolean includeSales = showSalesCheckbox.isSelected();
             boolean includeLoans = showLoansCheckbox.isSelected();
 
             List<PurchaseBean> purchases =
-                includeSales ? appController.getAllReservedPurchases() : List.of();
+                includeSales ? adminPurchaseFacade.getAllReservedPurchases() : List.of();
 
             List<LoanBean> loans =
-                includeLoans ? appController.getAllReservedLoans() : List.of();
+                includeLoans ? adminLoanFacade.getAllReservedLoans() : List.of();
 
             displayReservations(purchases, loans);
 
@@ -168,14 +170,14 @@ public class ReservationControllerGUI {
             resultsContainer.getChildren().clear();
             int count = 0;
 
+            // Processa acquisti
             for (PurchaseBean purchase : purchases) {
-                BookBean book = appController.getBookBeanById(purchase.getBookId());
-                if (book != null) {
+                if (purchase.getBook() != null) {
                     resultsContainer.getChildren().add(
                         cardFactory.createPurchaseCard(
                             purchase,
-                            book,
-                            () -> handleAcceptPurchase(purchase.getId(), book.getId()),
+                            purchase.getBook(),
+                            () -> handleAcceptPurchase(purchase.getId(), purchase.getBookId()),
                             () -> handleRejectPurchase(purchase.getId())
                         )
                     );
@@ -183,14 +185,17 @@ public class ReservationControllerGUI {
                 }
             }
 
+            // Processa prestiti
             for (LoanBean loan : loans) {
-                BookBean book = loan.getBook();
-                if (book != null) {
+                if (loan.getBook() != null) {
+                    // NOTA: I LoanBean dovrebbero avere getBookId() per ottenere l'ID del libro
+                    // Se non c'è, usa un metodo alternativo
+                    int bookId = getBookIdFromLoan(loan);
                     resultsContainer.getChildren().add(
                         cardFactory.createLoanCard(
                             loan,
-                            book,
-                            () -> handleAcceptLoan(loan.getId(), book.getId()),
+                            loan.getBook(),
+                            () -> handleAcceptLoan(loan.getId(), bookId),
                             () -> handleRejectLoan(loan.getId())
                         )
                     );
@@ -204,6 +209,15 @@ public class ReservationControllerGUI {
             showError("Errore", "Errore nella visualizzazione dei risultati");
         }
     }
+    
+    private int getBookIdFromLoan(LoanBean loan) {
+        // Metodo helper per ottenere l'ID del libro dal prestito
+        // Controlla se il LoanBean ha getBookId() o se deve essere estratto dal BookBean
+        if (loan.getBook() != null) {
+            return loan.getBook().getId();
+        }
+        return -1; // Valore di default
+    }
 
     private void updateResultsLabel(int total, int salesCount, int loansCount) {
         String modeText = "user".equals(searchMode) ? "per utente" : "per libro";
@@ -216,14 +230,15 @@ public class ReservationControllerGUI {
         }
     }
 
-    // ===== METODI MODIFICATI PER USARE GLI STATI =====
-
     private void handleAcceptPurchase(int purchaseId, int bookId) {
         try {
-            appController.acceptPurchase(purchaseId);
-            appController.updateBookStock(bookId, -1);
-            loadAllReservations();
-            showSuccess("Successo", "Vendita accettata con successo!");
+            boolean success = adminPurchaseFacade.acceptPurchase(purchaseId);
+            if (success) {
+                loadAllReservations();
+                showSuccess("Successo", "Vendita accettata con successo!");
+            } else {
+                showError("Errore", "Impossibile accettare la vendita");
+            }
         } catch (Exception e) {
             showError("Errore", "Errore nell'accettare la vendita: " + e.getMessage());
         }
@@ -231,9 +246,13 @@ public class ReservationControllerGUI {
 
     private void handleRejectPurchase(int purchaseId) {
         try {
-            // appController.rejectPurchase(purchaseId); // Se hai questo metodo
-            loadAllReservations();
-            showSuccess("Successo", "Vendita rifiutata!");
+            boolean success = adminPurchaseFacade.rejectPurchase(purchaseId);
+            if (success) {
+                loadAllReservations();
+                showSuccess("Successo", "Vendita rifiutata!");
+            } else {
+                showError("Errore", "Impossibile rifiutare la vendita");
+            }
         } catch (Exception e) {
             showError("Errore", "Errore nel rifiutare la vendita: " + e.getMessage());
         }
@@ -241,10 +260,13 @@ public class ReservationControllerGUI {
 
     private void handleAcceptLoan(int loanId, int bookId) {
         try {
-            appController.acceptLoan(loanId);
-            appController.updateBookStock(bookId, -1);
-            loadAllReservations();
-            showSuccess("Successo", "Prestito accettato con successo!");
+            boolean success = adminLoanFacade.acceptLoan(loanId);
+            if (success) {
+                loadAllReservations();
+                showSuccess("Successo", "Prestito accettato con successo!");
+            } else {
+                showError("Errore", "Impossibile accettare il prestito");
+            }
         } catch (Exception e) {
             showError("Errore", "Errore nell'accettare il prestito: " + e.getMessage());
         }
@@ -252,23 +274,23 @@ public class ReservationControllerGUI {
 
     private void handleRejectLoan(int loanId) {
         try {
-            // appController.rejectLoan(loanId); // Se hai questo metodo
-            loadAllReservations();
-            showSuccess("Successo", "Prestito rifiutato!");
+            boolean success = adminLoanFacade.rejectLoan(loanId);
+            if (success) {
+                loadAllReservations();
+                showSuccess("Successo", "Prestito rifiutato!");
+            } else {
+                showError("Errore", "Impossibile rifiutare il prestito");
+            }
         } catch (Exception e) {
             showError("Errore", "Errore nel rifiutare il prestito: " + e.getMessage());
         }
     }
 
-    // ===== NUOVI METODI PER GESTIONE STATI =====
-
     private void showSuccess(String title, String message) {
-        SuccessState successState = new SuccessState(stateManager, message);
-        stateManager.setState(successState);
+        stateManager.setState(new SuccessState(stateManager, message));
     }
 
     private void showError(String title, String message) {
-        ErrorState errorState = new ErrorState(stateManager, message);
-        stateManager.setState(errorState);
+        stateManager.setState(new ErrorState(stateManager, message));
     }
 }

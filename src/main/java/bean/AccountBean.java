@@ -7,7 +7,7 @@ public class AccountBean {
     protected String password;
     protected String firstName;
     protected String lastName;
-    protected String role; // "admin" o "logged_user"
+    protected String role; // "admin" o "logged_user" o null
 
     // ================== GETTER ==================
     public String getEmail() { return email; }
@@ -19,10 +19,15 @@ public class AccountBean {
     public boolean isAdmin() {
         return "admin".equalsIgnoreCase(role);
     }
+    
+    public boolean isUser() {
+        return "logged_user".equalsIgnoreCase(role);
+    }
 
     @Override
     public String toString() {
-        return firstName + " " + lastName + " (" + role + ")";
+        String roleStr = (role == null) ? "guest" : role;
+        return firstName + " " + lastName + " (" + roleStr + ")";
     }
 
     // ================== SETTER CON VALIDAZIONE ==================
@@ -55,8 +60,11 @@ public class AccountBean {
     }
 
     public void setRole(String role) throws IncorrectDataException {
-        if (role == null || role.isBlank()) {
-            throw new IncorrectDataException("Ruolo non valido");
+        // Permette null per guest, altrimenti solo valori specifici
+        if (role != null && !role.isBlank()) {
+            if (!"admin".equalsIgnoreCase(role) && !"logged_user".equalsIgnoreCase(role)) {
+                throw new IncorrectDataException("Ruolo non valido. Usa 'admin', 'logged_user' o null");
+            }
         }
         this.role = role;
     }

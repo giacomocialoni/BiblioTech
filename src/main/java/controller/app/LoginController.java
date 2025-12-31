@@ -22,6 +22,7 @@ public class LoginController {
     }
 
     public AccountBean login(String email, String password) throws DAOException {
+        
         if (email == null || email.isBlank() || password == null || password.isBlank())
             throw new IllegalArgumentException("Email e password obbligatorie");
 
@@ -36,9 +37,10 @@ public class LoginController {
             return null;
         }
 
-        if (account == null) return null;
+        if (account == null) {
+            return null;
+        }
 
-        // Aggiorna la session SOLO con MODEL
         Session.getInstance().login(account);
 
         return accountToBean(account);
@@ -50,7 +52,7 @@ public class LoginController {
 
     public boolean isAdmin() {
         Account account = Session.getInstance().getLoggedUser();
-        return account != null && account.isAdmin(); // oppure check ruolo
+        return account != null && account.isAdmin();
     }
 
     public AccountBean getLoggedUserBean() {

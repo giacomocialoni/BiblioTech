@@ -58,7 +58,7 @@ public class CSVPurchaseDAO implements PurchaseDAO {
     }
     
     @Override
-    public void deletePurchase(int purchaseId) throws DAOException, RecordNotFoundException {
+    public void rejectPurchase(int purchaseId) throws DAOException, RecordNotFoundException {
         List<Purchase> purchases = loadAllPurchases();
         boolean removed = purchases.removeIf(p -> p.getId() == purchaseId);
         

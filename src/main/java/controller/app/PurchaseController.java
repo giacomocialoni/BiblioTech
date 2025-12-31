@@ -1,21 +1,23 @@
 package controller.app;
 
-import app.Session;
+import bean.BookBean;
+import bean.PurchaseBean;
 import dao.BookDAO;
 import dao.PurchaseDAO;
 import dao.factory.DAOFactory;
 import exception.DAOException;
 import exception.RecordNotFoundException;
-import model.Account;
+import exception.IncorrectDataException;
 import model.Book;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import model.Purchase;
 import utils.BuyResult;
+import utils.PurchaseStatus;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class PurchaseController {
-
-    private static final Logger logger =
-            LoggerFactory.getLogger(PurchaseController.class);
 
     private final BookDAO bookDAO;
     private final PurchaseDAO purchaseDAO;
@@ -26,67 +28,134 @@ public class PurchaseController {
         this.purchaseDAO = factory.getPurchaseDAO();
     }
 
-    // ===================== PURCHASE =====================
+    // =========================
+    // USER OPERATIONS
+    // =========================
 
-    public BuyResult buyBook(int bookId, int quantity) {
-        Session session = Session.getInstance();
+    public BuyResult buyBook(int bookId, int quantity, String userEmail) {
+        if (quantity <= 0) return BuyResult.ERROR;
 
-        if (!session.isLoggedIn())
-            return BuyResult.NOT_LOGGED;
-
-        if (quantity <= 0)
-            return BuyResult.ERROR;
-
-        Account user = session.getLoggedUser();
         Book book;
-
         try {
             book = bookDAO.getBookById(bookId);
         } catch (RecordNotFoundException e) {
-            logger.warn("Libro non trovato id={}", bookId);
             return BuyResult.ERROR;
         } catch (DAOException e) {
-            logger.error("Errore DAO nel recupero libro id={}", bookId, e);
             return BuyResult.ERROR;
         }
 
-        if (book.getStock() < quantity)
-            return BuyResult.INSUFFICIENT_STOCK;
+        if (book.getStock() < quantity) return BuyResult.INSUFFICIENT_STOCK;
 
         try {
             bookDAO.updateStock(bookId, -quantity);
-
-            purchaseDAO.addPurchase(user.getEmail(), bookId);
-
+            purchaseDAO.addPurchase(userEmail, bookId);
             return BuyResult.SUCCESS;
-
         } catch (DAOException e) {
-            logger.error(
-                    "Errore DAO durante acquisto libro id={} user={}",
-                    bookId, user.getEmail(), e
-            );
             return BuyResult.ERROR;
         }
     }
 
-    // ===================== CHECK =====================
-
-    public boolean hasPurchasedBook(int bookId) {
-        Session session = Session.getInstance();
-
-        if (!session.isLoggedIn())
-            return false;
-
-        Account user = session.getLoggedUser();
-
+    public boolean hasPurchasedBook(String userEmail, int bookId) {
         try {
-            return purchaseDAO.hasUserPurchasedBook(user.getEmail(), bookId);
+            return purchaseDAO.hasUserPurchasedBook(userEmail, bookId);
         } catch (DAOException e) {
-            logger.error(
-                    "Errore DAO controllo acquisto libro id={} user={}",
-                    bookId, user.getEmail(), e
-            );
             return false;
         }
+    }
+
+    // =========================
+    // ADMIN OPERATIONS
+    // =========================
+
+    public List<PurchaseBean> getAllReservedPurchases() {
+        try {
+            return purchaseDAO.getAllReservedPurchases()
+                    .stream()
+                    .map(this::toPurchaseBean)
+                    .collect(Collectors.toList());
+        } catch (DAOException e) {
+            return List.of();
+        }
+    }
+
+    public List<PurchaseBean> searchPurchasesByUser(String userText) {
+        try {
+            return purchaseDAO.searchPurchasesByUser(userText)
+                    .stream()
+                    .map(this::toPurchaseBean)
+                    .collect(Collectors.toList());
+        } catch (DAOException e) {
+            return List.of();
+        }
+    }
+
+    public List<PurchaseBean> searchPurchasesByBook(String bookText) {
+        try {
+            return purchaseDAO.searchPurchasesByBook(bookText)
+                    .stream()
+                    .map(this::toPurchaseBean)
+                    .collect(Collectors.toList());
+        } catch (DAOException e) {
+            return List.of();
+        }
+    }
+
+    public boolean acceptPurchase(int purchaseId) {
+        try {
+            purchaseDAO.acceptPurchase(purchaseId);
+            return true;
+        } catch (DAOException e) {
+            return false;
+        }
+    }
+
+    public boolean rejectPurchase(int purchaseId) {
+        try {
+            purchaseDAO.rejectPurchase(purchaseId);
+            return true;
+        } catch (DAOException e) {
+            return false;
+        }
+    }
+
+    // =========================
+    // MAPPING
+    // =========================
+
+    private PurchaseBean toPurchaseBean(Purchase purchase) {
+        PurchaseBean bean = new PurchaseBean();
+        try {
+            bean.setId(purchase.getId());
+            bean.setUserEmail(purchase.getUserEmail());
+            bean.setBookId(purchase.getBookId());
+
+            PurchaseStatus status = purchase.getStatus();
+            bean.setStatus(status != null ? status : PurchaseStatus.RESERVED);
+
+            LocalDate statusDate = purchase.getStatusDate();
+            bean.setStatusDate(statusDate != null ? statusDate : LocalDate.now());
+
+            try {
+                Book book = bookDAO.getBookById(purchase.getBookId());
+                if (book != null) {
+                    BookBean bookBean = new BookBean();
+                    bookBean.setId(book.getId());
+                    bookBean.setTitle(book.getTitle());
+                    bookBean.setAuthor(book.getAuthor());
+                    bookBean.setCategory(book.getCategory());
+                    bookBean.setPrice(book.getPrice());
+                    bookBean.setStock(book.getStock());
+                    bookBean.setImagePath(book.getImagePath() != null ? book.getImagePath() : "default.jpg");
+                    bean.setBook(bookBean);
+                }
+            } catch (DAOException e) {
+                // fallback: bean con solo ID libro
+            }
+
+        } catch (IncorrectDataException e) {
+            // log o ignorare
+        }
+
+        return bean;
     }
 }

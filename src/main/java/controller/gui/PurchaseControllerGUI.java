@@ -4,7 +4,7 @@ import app.state.ErrorState;
 import app.state.StateManager;
 import app.state.SuccessState;
 import bean.BookBean;
-import controller.app.PurchaseController;
+import controller.app.facade.UserPurchaseFacade;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
@@ -22,11 +22,11 @@ public class PurchaseControllerGUI {
     private StateManager stateManager;
     private BookBean book;
     private int quantity;
-    private PurchaseController purchaseController;
+    private UserPurchaseFacade purchaseFacade;
 
     public void setStateManager(StateManager stateManager) {
         this.stateManager = stateManager;
-        this.purchaseController = new PurchaseController();
+        this.purchaseFacade = new UserPurchaseFacade();
     }
 
     public void setPurchaseData(BookBean book, int quantity) {
@@ -47,26 +47,32 @@ public class PurchaseControllerGUI {
         // Calcola il totale
         double total = book.getPrice() * quantity;
         
-        // Disabilita il pulsante se stock insufficiente
-        confirmButton.setDisable(book.getStock() < quantity);
+        // Disabilita il pulsante se stock insufficiente O utente non può comprare
+        boolean canPurchase = purchaseFacade.canPurchase();
+        boolean enoughStock = book.getStock() >= quantity;
         
-        if (book.getStock() < quantity) {
-            confirmButton.setDisable(true);
+        confirmButton.setDisable(!canPurchase || !enoughStock);
+        
+        if (!canPurchase) {
+            confirmButton.setText("Accedi per acquistare");
+            confirmButton.setStyle("-fx-background-color: #ff9800;");
+        } else if (!enoughStock) {
             confirmButton.setText("Stock insufficiente");
+            confirmButton.setStyle("-fx-background-color: #f44336;");
         } else {
-            confirmButton.setText("Conferma Acquisto - €" + String.format("%.2f", total));
+            confirmButton.setText(String.format("Conferma (€%.2f)", total));
+            confirmButton.setStyle("-fx-background-color: #4CAF50;");
         }
     }
 
     @FXML
     private void handleCancel() {
-        // MODIFICATO: usa goBack() invece di setState()
         stateManager.goBack();
     }
 
     @FXML
     private void handleConfirm() {
-        BuyResult result = purchaseController.buyBook(book.getId(), quantity);
+        BuyResult result = purchaseFacade.buyBook(book.getId(), quantity);
         
         switch (result) {
             case SUCCESS -> {
@@ -76,10 +82,21 @@ public class PurchaseControllerGUI {
                     ));
             }
             case INSUFFICIENT_STOCK -> {
-                // MODIFICATO: senza returnState
                 stateManager.setState(new ErrorState(
                     stateManager, 
                     "Stock insufficiente! Sono disponibili solo " + book.getStock() + " copie."
+                ));
+            }
+            case NOT_LOGGED -> {
+                stateManager.setState(new ErrorState(
+                    stateManager, 
+                    "Devi essere loggato per effettuare acquisti."
+                ));
+            }
+            case UNAUTHORIZED -> {
+                stateManager.setState(new ErrorState(
+                    stateManager, 
+                    "Il tuo account non permette acquisti."
                 ));
             }
             case ERROR -> {

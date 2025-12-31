@@ -195,7 +195,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     }
 
     @Override
-    public void deletePurchase(int purchaseId) throws DAOException, RecordNotFoundException {
+    public void rejectPurchase(int purchaseId) throws DAOException, RecordNotFoundException {
         String sql = "DELETE FROM purchases WHERE id = ?";
         
         try (Connection conn = dbConnection.getConnection();

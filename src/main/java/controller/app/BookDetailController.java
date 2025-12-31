@@ -2,6 +2,8 @@ package controller.app;
 
 import app.Session;
 import bean.BookBean;
+import controller.app.facade.UserLoanFacade;
+import controller.app.facade.UserPurchaseFacade;
 import dao.BookDAO;
 import dao.WishlistDAO;
 import dao.factory.DAOFactory;
@@ -12,72 +14,67 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.BuyResult;
 import utils.LoanResult;
-import utils.Constants;
 
 public class BookDetailController {
 
-    private static final Logger logger = LoggerFactory.getLogger(BookDetailController.class);
+    private static final Logger logger =
+            LoggerFactory.getLogger(BookDetailController.class);
 
-    private final PurchaseController purchaseController;
-    private final LoanController loanController;
+    private final UserPurchaseFacade purchaseFacade;
+    private final UserLoanFacade loanFacade;
     private final BookDAO bookDAO;
     private final WishlistDAO wishlistDAO;
 
     public BookDetailController() {
-        this.purchaseController = new PurchaseController();
-        this.loanController = new LoanController();
-        this.bookDAO = DAOFactory.getActiveFactory().getBookDAO();
-        this.wishlistDAO = DAOFactory.getActiveFactory().getWishlistDAO();
+        DAOFactory factory = DAOFactory.getActiveFactory();
+        this.purchaseFacade = new UserPurchaseFacade();
+        this.loanFacade = new UserLoanFacade();
+        this.bookDAO = factory.getBookDAO();
+        this.wishlistDAO = factory.getWishlistDAO();
     }
 
     // ================== READ ==================
+
     public BookBean getBookById(int bookId) {
         try {
             Book book = bookDAO.getBookById(bookId);
             return toBean(book);
         } catch (RecordNotFoundException e) {
-            logger.warn("Libro non trovato con ID: {}", bookId);
+            logger.warn("Libro non trovato id={}", bookId);
             return null;
         } catch (DAOException e) {
-            logger.error("Errore durante il recupero del libro con ID: {}", bookId, e);
+            logger.error("Errore DAO nel recupero libro id={}", bookId, e);
             return null;
         }
     }
 
     // ================== BUY / LOAN ==================
+
     public BuyResult buyBook(int bookId, int quantity) {
-        return purchaseController.buyBook(bookId, quantity);
+        return purchaseFacade.buyBook(bookId, quantity);
     }
 
     public LoanResult loanBook(int bookId) {
-        return loanController.loanBook(bookId);
+        return loanFacade.loanBook(bookId);
     }
 
     public boolean hasPurchasedBook(int bookId) {
-        return purchaseController.hasPurchasedBook(bookId);
-    }
-
-    public boolean canLoanBook(int bookId) {
-        Session session = Session.getInstance();
-        if (!session.isLoggedIn()) return false;
-
-        Book book = getBookEntityById(bookId);
-        if (book == null || book.getStock() <= 0) return false;
-
-        String email = session.getLoggedUser().getEmail();
-        return !loanController.hasExpiredLoans(email) &&
-               loanController.getActiveLoansCount(email) < Constants.MAX_ACTIVE_LOANS;
+        return purchaseFacade.hasPurchasedBook(bookId);
     }
 
     // ================== WISHLIST ==================
+
     public boolean isInWishlist(int bookId) {
         Session session = Session.getInstance();
         if (!session.isLoggedIn()) return false;
 
         try {
-            return wishlistDAO.isInWishlist(session.getLoggedUser().getEmail(), bookId);
+            return wishlistDAO.isInWishlist(
+                    session.getLoggedUser().getEmail(),
+                    bookId
+            );
         } catch (DAOException e) {
-            logger.error("Errore nel controllo wishlist", e);
+            logger.error("Errore DAO wishlist", e);
             return false;
         }
     }
@@ -87,10 +84,13 @@ public class BookDetailController {
         if (!session.isLoggedIn()) return false;
 
         try {
-            wishlistDAO.addToWishlist(session.getLoggedUser().getEmail(), bookId);
+            wishlistDAO.addToWishlist(
+                    session.getLoggedUser().getEmail(),
+                    bookId
+            );
             return true;
         } catch (DAOException e) {
-            logger.error("Errore nell'aggiunta alla wishlist", e);
+            logger.error("Errore DAO add wishlist", e);
             return false;
         }
     }
@@ -100,15 +100,37 @@ public class BookDetailController {
         if (!session.isLoggedIn()) return false;
 
         try {
-            wishlistDAO.removeFromWishlist(session.getLoggedUser().getEmail(), bookId);
+            wishlistDAO.removeFromWishlist(
+                    session.getLoggedUser().getEmail(),
+                    bookId
+            );
             return true;
         } catch (DAOException e) {
-            logger.error("Errore nella rimozione dalla wishlist", e);
+            logger.error("Errore DAO remove wishlist", e);
             return false;
         }
     }
 
-    // ================== PRIVATE HELPERS ==================
+    // ================== USER INFO ==================
+
+    public boolean isUserLoggedIn() {
+        return Session.getInstance().isLoggedIn();
+    }
+
+    public boolean isUserGuest() {
+        return Session.getInstance().isGuest();
+    }
+
+    public boolean isUserAdmin() {
+        return Session.getInstance().isAdmin();
+    }
+
+    public boolean isUserNormal() {
+        return Session.getInstance().isUser();
+    }
+
+    // ================== MAPPING ==================
+
     private BookBean toBean(Book book) {
         BookBean bean = new BookBean();
         try {
@@ -125,17 +147,8 @@ public class BookDetailController {
             bean.setIsbn(book.getIsbn());
             bean.setPlot(book.getPlot());
         } catch (Exception e) {
-            logger.warn("Errore nella creazione del BookBean per libro id={}", book.getId(), e);
+            logger.warn("Errore mapping BookBean id={}", book.getId(), e);
         }
         return bean;
-    }
-
-    private Book getBookEntityById(int bookId) {
-        try {
-            return bookDAO.getBookById(bookId);
-        } catch (Exception e) {
-            logger.warn("Errore nel recupero entity libro id={}", bookId, e);
-            return null;
-        }
     }
 }

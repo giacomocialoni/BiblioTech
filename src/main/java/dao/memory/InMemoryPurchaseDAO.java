@@ -36,7 +36,7 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
     }
 
     @Override
-    public void deletePurchase(int purchaseId) throws DAOException, RecordNotFoundException {
+    public void rejectPurchase(int purchaseId) throws DAOException, RecordNotFoundException {
         Optional<Purchase> purchaseToRemove = purchases.stream()
                 .filter(p -> p.getId() == purchaseId)
                 .findFirst();
