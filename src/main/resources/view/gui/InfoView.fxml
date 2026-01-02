@@ -44,7 +44,7 @@
                               <children>
                                   <Text text="I libri possono essere prenotati sia per l’acquisto sia per il prestito. Ogni utente può avere fino a tre prestiti attivi contemporaneamente." />
                                   <Text text="&#10;&#10;Se un prestito supera la data di scadenza e risulta non restituito, non sarà possibile richiedere nuovi prestiti né prenotare libri per l’acquisto." />
-                                  <Text text="&#10;&#10;Tutte le operazioni di ritiro, restituzione e pagamento vengono effettuate esclusivamente presso la biblioteca." />
+                                  <Text text="&#10;&#10;Tutte le operazioni di ritiro, restituzione e pagamento vengono effettuate esclusivamente presso la biblioteca e verranno registrate dagli amministratori." />
                               </children>
                           </TextFlow>
       

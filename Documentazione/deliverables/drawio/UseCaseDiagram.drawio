@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" version="29.0.3">
   <diagram name="Pagina-1" id="PxbCw7HrnLSv1UJAS18B">
-    <mxGraphModel dx="1426" dy="849" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="946" dy="732" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -82,7 +82,7 @@
         <mxCell id="NxhVRNpNvoHkXf8Xt0lw-7" value="&lt;font size=&quot;1&quot;&gt;Add Book&lt;/font&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;to Wishlist&lt;/font&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;verticalAlign=middle;spacing=2;horizontal=1;" parent="1" vertex="1">
           <mxGeometry x="200" y="360" width="80" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="NxhVRNpNvoHkXf8Xt0lw-8" value="&lt;font size=&quot;1&quot;&gt;View System&lt;/font&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;info&lt;/font&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;verticalAlign=middle;spacing=2;horizontal=1;" parent="1" vertex="1">
+        <mxCell id="NxhVRNpNvoHkXf8Xt0lw-8" value="&lt;font size=&quot;1&quot;&gt;View&lt;/font&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Info&lt;/font&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;verticalAlign=middle;spacing=2;horizontal=1;" parent="1" vertex="1">
           <mxGeometry x="280" y="240" width="80" height="40" as="geometry" />
         </mxCell>
         <mxCell id="NxhVRNpNvoHkXf8Xt0lw-9" value="&lt;font size=&quot;1&quot;&gt;View&lt;/font&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Board&lt;/font&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;verticalAlign=middle;spacing=2;horizontal=1;" parent="1" vertex="1">
@@ -200,7 +200,7 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="g6YSW5JP_qcrxsjoB8J_-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="Fa-hKr8U-mGcrntG05Dz-22" target="NxhVRNpNvoHkXf8Xt0lw-12">
+        <mxCell id="g6YSW5JP_qcrxsjoB8J_-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Fa-hKr8U-mGcrntG05Dz-22" target="NxhVRNpNvoHkXf8Xt0lw-12" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="460" y="700" />
@@ -214,7 +214,7 @@
         <mxCell id="Fa-hKr8U-mGcrntG05Dz-25" value="* funzionalità non implementate nel progetto" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;spacing=0;spacingRight=2;spacingLeft=2;" parent="1" vertex="1">
           <mxGeometry x="120" y="930" width="600" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="g6YSW5JP_qcrxsjoB8J_-2" value="&lt;span style=&quot;font-size: 10px;&quot;&gt;Includes&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="1">
+        <mxCell id="g6YSW5JP_qcrxsjoB8J_-2" value="&lt;span style=&quot;font-size: 10px;&quot;&gt;Includes&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="1" vertex="1" connectable="0">
           <mxGeometry x="298" y="517" as="geometry">
             <mxPoint x="173" y="61" as="offset" />
           </mxGeometry>

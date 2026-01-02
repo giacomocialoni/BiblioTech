@@ -88,7 +88,7 @@ public class ReturningLoanCardFactory {
 	    }
 
 	    // Pulsante Restituito
-	    Button returnButton = new Button("Restituito");
+	    Button returnButton = new Button("Contrassegna come restituito");
 	    returnButton.getStyleClass().add("buy-button");
 	    returnButton.setOnAction(e -> onReturn.run());
 	    returnButton.setMaxWidth(Double.MAX_VALUE);

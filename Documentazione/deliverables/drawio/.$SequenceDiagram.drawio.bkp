@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" version="29.0.3">
   <diagram name="Pagina-1" id="gXShwZOd5gfRwTGEjFwc">
-    <mxGraphModel dx="1501" dy="960" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="1901" dy="1216" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -440,9 +440,6 @@
         </mxCell>
         <mxCell id="an6ea-yHq14VjE49RaJ--147" value="save loan as loaned" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Helvetica;fontSize=8;fontColor=default;labelBackgroundColor=default;spacing=0;spacingBottom=2;" vertex="1" parent="1">
           <mxGeometry x="1000" y="980" width="80" height="10" as="geometry" />
-        </mxCell>
-        <mxCell id="an6ea-yHq14VjE49RaJ--151" value="* le azioni con asterisco vengono iterate N volte in base al numero di risultati ottenuti" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=default;align=center;verticalAlign=middle;rounded=0;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;" vertex="1" parent="1">
-          <mxGeometry x="400" y="1070" width="440" height="20" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

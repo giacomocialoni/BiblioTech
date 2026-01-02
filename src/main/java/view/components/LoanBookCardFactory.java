@@ -35,8 +35,18 @@ public class LoanBookCardFactory {
         Label remaining = new Label();
         long days = loan.daysRemaining();
 
-        if (days < 0) remaining.setText("Scaduto");
-        else remaining.setText("Giorni rimasti: " + days);
+        // Determina il testo e lo stile CSS in base ai giorni rimanenti
+        if (days < 0) {
+            long daysExpired = Math.abs(days);
+            remaining.setText("Scaduto da: " + daysExpired + " giorni");
+            remaining.getStyleClass().add("loan-expired");
+        } else if (days <= 5) {
+            remaining.setText("Giorni rimasti: " + days);
+            remaining.getStyleClass().add("loan-warning");
+        } else {
+            remaining.setText("Giorni rimasti: " + days);
+            remaining.getStyleClass().add("loan-normal");
+        }
 
         VBox info = new VBox(5, start, due, remaining);
         info.setPadding(new Insets(8));
