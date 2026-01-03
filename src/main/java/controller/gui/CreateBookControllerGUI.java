@@ -1,26 +1,35 @@
 package controller.gui;
 
-import app.state.StateManager;
 import app.state.ErrorState;
+import app.state.StateManager;
 import app.state.SuccessState;
 import bean.BookBean;
 import controller.app.ManageBooksController;
 import dao.CategoryDAO;
 import dao.factory.DAOFactory;
 import exception.DAOException;
+import exception.DuplicateBookException;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.List;
 
 public class CreateBookControllerGUI {
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(CreateBookControllerGUI.class);
+
+    private static final String IMAGE_DIR =
+            "src/main/resources/images";
 
     @FXML private TextField titleField;
     @FXML private TextField authorField;
@@ -32,17 +41,12 @@ public class CreateBookControllerGUI {
     @FXML private TextField stockField;
     @FXML private TextArea plotArea;
     @FXML private TextField priceField;
-    @FXML private Button imageButton;
     @FXML private ImageView previewImage;
     @FXML private Label imageLabel;
-    @FXML private Button backButton;
-    @FXML private Button createButton;
-    @FXML private Button cancelButton;
 
     private StateManager stateManager;
     private final ManageBooksController appController = new ManageBooksController();
     private File selectedImageFile;
-    private static final String IMAGE_UPLOAD_PATH = "src/main/resources/images/";
     private CategoryDAO categoryDAO;
 
     public void setStateManager(StateManager stateManager) {
@@ -52,83 +56,48 @@ public class CreateBookControllerGUI {
     @FXML
     public void initialize() {
         try {
-            // Inizializza DAO per le categorie
             categoryDAO = DAOFactory.getActiveFactory().getCategoryDAO();
-            
-            // Carica categorie dal database
-            loadCategoriesFromDatabase();
-            
+            loadCategories();
         } catch (Exception e) {
-            System.err.println("Errore nel caricamento delle categorie: " + e.getMessage());
-            // Fallback a lista vuota
-            categoryCombo.getItems().clear();
+            logger.error("Error loading categories", e);
         }
-        
-        // Carica immagine placeholder
+
         try {
-            Image placeholder = new Image(getClass().getResourceAsStream("/images/placeholder.png"));
-            previewImage.setImage(placeholder);
+            previewImage.setImage(
+                new Image(getClass().getResourceAsStream("/images/placeholder.png"))
+            );
         } catch (Exception e) {
-            System.err.println("Placeholder image not found: " + e.getMessage());
+            logger.warn("Placeholder image not found");
         }
-        
-        // Validatori numerici
-        yearField.textProperty().addListener((obs, oldVal, newVal) -> {
-            if (!newVal.matches("\\d*")) {
-                yearField.setText(newVal.replaceAll("[^\\d]", ""));
-            }
-        });
-        
-        pagesField.textProperty().addListener((obs, oldVal, newVal) -> {
-            if (!newVal.matches("\\d*")) {
-                pagesField.setText(newVal.replaceAll("[^\\d]", ""));
-            }
-        });
-        
-        stockField.textProperty().addListener((obs, oldVal, newVal) -> {
-            if (!newVal.matches("\\d*")) {
-                stockField.setText(newVal.replaceAll("[^\\d]", ""));
-            }
-        });
-        
-        priceField.textProperty().addListener((obs, oldVal, newVal) -> {
-            if (!newVal.matches("\\d*\\.?\\d*")) {
-                priceField.setText(newVal.replaceAll("[^\\d.]", ""));
-            }
-        });
+
+        allowOnlyNumbers(yearField);
+        allowOnlyNumbers(pagesField);
+        allowOnlyNumbers(stockField);
+        allowDecimal(priceField);
     }
 
-    private void loadCategoriesFromDatabase() {
-        try {
-            List<String> categories = new ArrayList<>();
-            List<model.Category> dbCategories = categoryDAO.getAllCategories();
-            
-            for (model.Category cat : dbCategories) {
-                categories.add(cat.getCategory());
-            }
-            
-            categoryCombo.getItems().clear();
-            categoryCombo.getItems().addAll(categories);
-            
-            if (!categories.isEmpty()) {
-                categoryCombo.getSelectionModel().selectFirst();
-            }
-        } catch (DAOException e) {
-            System.err.println("Errore nel caricamento delle categorie: " + e.getMessage());
-            categoryCombo.getItems().clear();
+    private void loadCategories() throws DAOException {
+        List<model.Category> categories = categoryDAO.getAllCategories();
+        categoryCombo.getItems().clear();
+        for (model.Category c : categories) {
+            categoryCombo.getItems().add(c.getCategory());
+        }
+        if (!categoryCombo.getItems().isEmpty()) {
+            categoryCombo.getSelectionModel().selectFirst();
         }
     }
 
     @FXML
     private void handleSelectImage() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Seleziona immagine del libro");
-        fileChooser.getExtensionFilters().addAll(
-            new FileChooser.ExtensionFilter("Immagini", "*.png", "*.jpg", "*.jpeg", "*.gif"),
-            new FileChooser.ExtensionFilter("Tutti i file", "*.*")
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Select book image");
+        chooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter(
+                "Images", "*.png", "*.jpg", "*.jpeg"
+            )
         );
-        
-        File file = fileChooser.showOpenDialog(null);
+
+        File file = chooser.showOpenDialog(null);
         if (file != null) {
             selectedImageFile = file;
             previewImage.setImage(new Image(file.toURI().toString()));
@@ -138,174 +107,110 @@ public class CreateBookControllerGUI {
 
     @FXML
     private void handleCreateBook() {
+        if (!validateFields()) return;
+
+        String imageName = null;
+
         try {
-            // Validazione
-            if (!validateFields()) return;
-            
-            // Validazione categoria esistente
-            String selectedCategory = categoryCombo.getValue();
-            if (!isValidCategory(selectedCategory)) {
-                stateManager.setState(new ErrorState(
-                    stateManager,
-                    "Categoria non valida. Seleziona una categoria esistente."
-                ));
-                return;
-            }
-            
-            // Copia immagine se selezionata
-            String imageFileName = null;
             if (selectedImageFile != null) {
-                imageFileName = copyImageToResources(selectedImageFile);
+                imageName = copyImageToResources(
+                    selectedImageFile,
+                    titleField.getText()
+                );
             }
-            
-            // Crea BookBean
-            BookBean bookBean = new BookBean();
-            bookBean.setTitle(titleField.getText().trim());
-            bookBean.setAuthor(authorField.getText().trim());
-            bookBean.setCategory(selectedCategory);
-            bookBean.setYear(Integer.parseInt(yearField.getText()));
-            bookBean.setPublisher(publisherField.getText().trim());
-            bookBean.setPages(Integer.parseInt(pagesField.getText()));
-            bookBean.setIsbn(isbnField.getText().trim());
-            bookBean.setStock(Integer.parseInt(stockField.getText()));
-            bookBean.setPlot(plotArea.getText().trim());
-            bookBean.setPrice(Double.parseDouble(priceField.getText()));
-            bookBean.setImagePath(imageFileName); // Solo nome file, senza percorso
-            
-            // Crea Model Book
-            model.Book book = new model.Book(
-                0, // ID sarà generato dal DB
-                bookBean.getTitle(),
-                bookBean.getAuthor(),
-                bookBean.getCategory(),
-                bookBean.getYear(),
-                bookBean.getPublisher(),
-                bookBean.getPages(),
-                bookBean.getIsbn(),
-                bookBean.getStock(),
-                bookBean.getPlot(),
-                bookBean.getImagePath(), // Solo nome file, senza percorso
-                bookBean.getPrice()
-            );
-            
-            // Salva nel database
-            appController.addBook(book);
-            
-            // Successo
+
+            BookBean bean = new BookBean();
+            bean.setTitle(titleField.getText().trim());
+            bean.setAuthor(authorField.getText().trim());
+            bean.setCategory(categoryCombo.getValue());
+            bean.setYear(Integer.parseInt(yearField.getText()));
+            bean.setPublisher(publisherField.getText().trim());
+            bean.setPages(Integer.parseInt(pagesField.getText()));
+            bean.setIsbn(isbnField.getText().trim());
+            bean.setStock(Integer.parseInt(stockField.getText()));
+            bean.setPlot(plotArea.getText().trim());
+            bean.setPrice(Double.parseDouble(priceField.getText()));
+            bean.setImagePath(imageName);
+
+            appController.addBook(bean);
+
             stateManager.setState(new SuccessState(
-                stateManager, 
-                "Libro '" + book.getTitle() + "' creato con successo!"
+                stateManager,
+                "Book '" + bean.getTitle() + "' created successfully"
             ));
-            
-        } catch (Exception e) {
+
+        } catch (DuplicateBookException e) {
+            logger.warn("Duplicate book creation attempt", e);
             stateManager.setState(new ErrorState(
                 stateManager,
-                "Errore nella creazione del libro: " + e.getMessage()
+                e.getUserFriendlyMessage()
+            ));
+
+        } catch (Exception e) {
+            logger.error("Error creating book", e);
+            stateManager.setState(new ErrorState(
+                stateManager,
+                "Error creating book"
             ));
         }
     }
+
+    private String copyImageToResources(File source, String title) throws Exception {
+        Files.createDirectories(Path.of(IMAGE_DIR));
+
+        String extension = source.getName()
+                .substring(source.getName().lastIndexOf('.'));
+
+        String fileName = title
+                .toLowerCase()
+                .replaceAll("[^a-z0-9 ]", "")
+                .trim()
+                .replace(" ", "_") + extension;
+
+        Path target = Path.of(IMAGE_DIR, fileName);
+        Files.copy(source.toPath(), target, StandardCopyOption.REPLACE_EXISTING);
+
+        logger.info("Image saved in resources: {}", fileName);
+        return fileName;
+    }
+
+    private boolean validateFields() {
+        if (titleField.getText().isBlank()
+                || authorField.getText().isBlank()
+                || categoryCombo.getValue() == null
+                || yearField.getText().isBlank()
+                || pagesField.getText().isBlank()
+                || stockField.getText().isBlank()
+                || priceField.getText().isBlank()) {
+
+            stateManager.setState(new ErrorState(
+                stateManager,
+                "All mandatory fields must be filled"
+            ));
+            return false;
+        }
+        return true;
+    }
+    
 
     @FXML
     private void handleCancel() {
         stateManager.goBack();
     }
 
-    private boolean isValidCategory(String category) {
-        if (category == null || category.trim().isEmpty()) {
-            return false;
-        }
-        
-        try {
-            List<model.Category> categories = categoryDAO.getAllCategories();
-            for (model.Category cat : categories) {
-                if (cat.getCategory().equalsIgnoreCase(category.trim())) {
-                    return true;
-                }
+    private void allowOnlyNumbers(TextField field) {
+        field.textProperty().addListener((o, old, val) -> {
+            if (!val.matches("\\d*")) {
+                field.setText(val.replaceAll("\\D", ""));
             }
-            return false;
-        } catch (DAOException e) {
-            return false;
-        }
+        });
     }
 
-    private boolean validateFields() {
-        StringBuilder errors = new StringBuilder();
-        
-        if (titleField.getText().trim().isEmpty()) errors.append("• Titolo obbligatorio\n");
-        if (authorField.getText().trim().isEmpty()) errors.append("• Autore obbligatorio\n");
-        if (categoryCombo.getValue() == null) errors.append("• Categoria obbligatoria\n");
-        if (yearField.getText().trim().isEmpty()) errors.append("• Anno obbligatorio\n");
-        if (publisherField.getText().trim().isEmpty()) errors.append("• Editore obbligatorio\n");
-        if (pagesField.getText().trim().isEmpty()) errors.append("• Pagine obbligatorie\n");
-        if (isbnField.getText().trim().isEmpty()) errors.append("• ISBN obbligatorio\n");
-        if (stockField.getText().trim().isEmpty()) errors.append("• Stock obbligatorio\n");
-        if (priceField.getText().trim().isEmpty()) errors.append("• Prezzo obbligatorio\n");
-        
-        // Validazioni numeriche
-        try {
-            int year = Integer.parseInt(yearField.getText());
-            if (year <= 0) errors.append("• Anno non valido\n");
-        } catch (NumberFormatException e) {
-            errors.append("• Anno non valido\n");
-        }
-        
-        try {
-            int pages = Integer.parseInt(pagesField.getText());
-            if (pages <= 0) errors.append("• Pagine non valide\n");
-        } catch (NumberFormatException e) {
-            errors.append("• Pagine non valide\n");
-        }
-        
-        try {
-            int stock = Integer.parseInt(stockField.getText());
-            if (stock < 0) errors.append("• Stock non valido\n");
-        } catch (NumberFormatException e) {
-            errors.append("• Stock non valido\n");
-        }
-        
-        try {
-            double price = Double.parseDouble(priceField.getText());
-            if (price < 0) errors.append("• Prezzo non valido\n");
-        } catch (NumberFormatException e) {
-            errors.append("• Prezzo non valido\n");
-        }
-        
-        if (errors.length() > 0) {
-            stateManager.setState(new ErrorState(
-                stateManager,
-                "Correggi i seguenti errori:\n" + errors.toString()
-            ));
-            return false;
-        }
-        
-        return true;
-    }
-
-    private String copyImageToResources(File sourceFile) {
-        try {
-            // Crea directory se non esiste
-            Path uploadDir = Path.of(IMAGE_UPLOAD_PATH);
-            Files.createDirectories(uploadDir);
-            
-            // Estrai estensione del file
-            String originalName = sourceFile.getName();
-            String extension = "";
-            int dotIndex = originalName.lastIndexOf('.');
-            if (dotIndex > 0) {
-                extension = originalName.substring(dotIndex);
+    private void allowDecimal(TextField field) {
+        field.textProperty().addListener((o, old, val) -> {
+            if (!val.matches("\\d*(\\.\\d*)?")) {
+                field.setText(old);
             }
-            
-            // Genera nome univoco mantenendo l'estensione originale
-            String fileName = System.currentTimeMillis() + "_book" + extension;
-            Path targetPath = uploadDir.resolve(fileName);
-            
-            // Copia file
-            Files.copy(sourceFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            
-            // Restituisce SOLO il nome del file (senza percorso)
-            return fileName;
-        } catch (Exception e) {
-            throw new RuntimeException("Errore nel caricamento dell'immagine: " + e.getMessage(), e);
-        }
+        });
     }
 }

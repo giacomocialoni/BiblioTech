@@ -3,6 +3,7 @@ package controller.gui;
 import app.state.*;
 import bean.AccountBean;
 import controller.app.SignInController;
+import exception.EmailAlreadyRegisteredException;
 import javafx.animation.FadeTransition;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
@@ -29,7 +30,6 @@ public class SignInControllerGUI {
     private SignInController signInController;
 
     private boolean passwordFieldTouched = false;
-    private boolean repeatPasswordFieldTouched = false;
 
     public void setStateManager(StateManager stateManager) {
         this.stateManager = stateManager;
@@ -47,7 +47,6 @@ public class SignInControllerGUI {
 
         repeatPasswordField.focusedProperty().addListener((obs, oldVal, newVal) -> {
             if (!newVal) {
-                repeatPasswordFieldTouched = true;
                 if (passwordFieldTouched) validatePasswordMatch();
                 else validatePasswordLength();
             }
@@ -58,7 +57,6 @@ public class SignInControllerGUI {
     private void handleSignIn() {
         try {
             passwordFieldTouched = true;
-            repeatPasswordFieldTouched = true;
 
             if (!validateAllFields()) return;
 
@@ -70,34 +68,61 @@ public class SignInControllerGUI {
             );
 
             if (accountBean != null) {
+                // SUCCESSO - vai alla main view
                 stateManager.setState(new MainUserState(stateManager));
             }
 
         } catch (IllegalArgumentException e) {
+            // Validazione input fallita
             showError("Tutti i campi sono obbligatori!");
+            
+        } catch (EmailAlreadyRegisteredException e) {
+            handleDuplicateEmail(e);
+            
         } catch (Exception e) {
-            showError(e.getMessage());
+            // Errore generico
+            showError("Errore: " + e.getMessage());
         }
     }
-
-    private boolean validateAllFields() {
-        if (firstNameField.getText().trim().isEmpty() || lastNameField.getText().trim().isEmpty() ||
-            emailField.getText().trim().isEmpty() || passwordField.getText().isEmpty()) {
-            showError("Tutti i campi sono obbligatori!");
-            return false;
-        }
-
-        if (!isValidEmail(emailField.getText())) {
-            showError("Inserisci un'email valida!");
-            shakeNode(emailField);
-            return false;
-        }
-
-        if (!validatePasswordLength()) return false;
-
-        if (passwordFieldTouched && repeatPasswordFieldTouched && !validatePasswordMatch()) return false;
-
-        return true;
+    
+    private void handleDuplicateEmail(EmailAlreadyRegisteredException e) {
+        // 1. Messaggio di errore nella label rossa
+    	showError(e.getUserFriendlyMessage());
+        
+        // 2. Vibrazione del campo email (come nel login)
+        shakeNode(emailField);
+        
+        // 3. Focus sul campo email
+        emailField.requestFocus();
+        emailField.selectAll();
+    }
+    
+    private void showError(String message) {
+        errorLabel.setText(message);
+        errorLabel.setOpacity(1.0);
+        errorLabel.setVisible(true);
+        
+        // Animazione fade out dopo 5 secondi (come nel login)
+        if (errorFade != null) errorFade.stop();
+        
+        errorFade = new FadeTransition(Duration.seconds(0.5), errorLabel);
+        errorFade.setFromValue(1.0);
+        errorFade.setToValue(0.0);
+        errorFade.setDelay(Duration.seconds(5));
+        errorFade.setOnFinished(fadeEvent -> errorLabel.setVisible(false));
+        errorFade.play();
+    }
+    
+    private void shakeNode(Node node) {
+        Timeline timeline = new Timeline(
+            new KeyFrame(Duration.millis(0), new KeyValue(node.translateXProperty(), 0)),
+            new KeyFrame(Duration.millis(50), new KeyValue(node.translateXProperty(), -10)),
+            new KeyFrame(Duration.millis(100), new KeyValue(node.translateXProperty(), 10)),
+            new KeyFrame(Duration.millis(150), new KeyValue(node.translateXProperty(), -10)),
+            new KeyFrame(Duration.millis(200), new KeyValue(node.translateXProperty(), 10)),
+            new KeyFrame(Duration.millis(250), new KeyValue(node.translateXProperty(), 0))
+        );
+        timeline.play();
     }
 
     private boolean isValidEmail(String email) {
@@ -123,32 +148,59 @@ public class SignInControllerGUI {
         errorLabel.setVisible(false);
         return true;
     }
-
-    private void showError(String message) {
-        errorLabel.setText(message);
-        errorLabel.setOpacity(1.0);
-        errorLabel.setVisible(true);
-
-        if (errorFade != null) errorFade.stop();
-
-        errorFade = new FadeTransition(Duration.seconds(0.5), errorLabel);
-        errorFade.setFromValue(1.0);
-        errorFade.setToValue(0.0);
-        errorFade.setDelay(Duration.seconds(5));
-        errorFade.setOnFinished(e -> errorLabel.setVisible(false));
-        errorFade.play();
-    }
-
-    private void shakeNode(Node node) {
-        Timeline timeline = new Timeline(
-            new KeyFrame(Duration.millis(0), new KeyValue(node.translateXProperty(), 0)),
-            new KeyFrame(Duration.millis(50), new KeyValue(node.translateXProperty(), -10)),
-            new KeyFrame(Duration.millis(100), new KeyValue(node.translateXProperty(), 10)),
-            new KeyFrame(Duration.millis(150), new KeyValue(node.translateXProperty(), -10)),
-            new KeyFrame(Duration.millis(200), new KeyValue(node.translateXProperty(), 10)),
-            new KeyFrame(Duration.millis(250), new KeyValue(node.translateXProperty(), 0))
-        );
-        timeline.play();
+    
+    private boolean validateAllFields() {
+        boolean valid = true;
+        
+        // Controllo campi obbligatori
+        if (firstNameField.getText().trim().isEmpty()) {
+            showError("Il nome è obbligatorio!");
+            shakeNode(firstNameField);
+            valid = false;
+        }
+        
+        if (lastNameField.getText().trim().isEmpty()) {
+            if (valid) showError("Il cognome è obbligatorio!");
+            shakeNode(lastNameField);
+            valid = false;
+        }
+        
+        if (emailField.getText().trim().isEmpty()) {
+            if (valid) showError("L'email è obbligatoria!");
+            shakeNode(emailField);
+            valid = false;
+        }
+        
+        if (passwordField.getText().isEmpty()) {
+            if (valid) showError("La password è obbligatoria!");
+            shakeNode(passwordField);
+            valid = false;
+        }
+        
+        if (repeatPasswordField.getText().isEmpty()) {
+            if (valid) showError("Devi ripetere la password!");
+            shakeNode(repeatPasswordField);
+            valid = false;
+        }
+        
+        // Validazione email format
+        if (valid && !isValidEmail(emailField.getText())) {
+            showError("Inserisci un'email valida!");
+            shakeNode(emailField);
+            valid = false;
+        }
+        
+        // Validazione password
+        if (valid && !validatePasswordLength()) {
+            valid = false;
+        }
+        
+        // Validazione password match
+        if (valid && !validatePasswordMatch()) {
+            valid = false;
+        }
+        
+        return valid;
     }
 
     @FXML

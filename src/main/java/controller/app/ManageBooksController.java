@@ -3,6 +3,7 @@ package controller.app;
 import dao.BookDAO;
 import dao.factory.DAOFactory;
 import exception.DAOException;
+import exception.DuplicateBookException;
 import exception.RecordNotFoundException;
 import model.Book;
 import bean.BookBean;
@@ -66,13 +67,19 @@ public class ManageBooksController {
     }
 
     // ===== OPERAZIONI CRUD / STOCK =====
-    // Questi rimangono simili perché scrivono direttamente nel DB con Book
 
-    public void addBook(Book book) {
+    public void addBook(BookBean bookBean) throws DuplicateBookException {
         try {
+            Book book = mapBeanToModel(bookBean);
             bookDAO.addBook(book);
+
+        } catch (DuplicateBookException e) {
+            logger.warn("Libro duplicato: {}", e.getMessage());
+            throw e;
+
         } catch (DAOException e) {
-            logger.error("Errore DAO durante l'aggiunta del libro: {}", book.getTitle(), e);
+            logger.error("Errore DAO durante la creazione del libro", e);
+            throw new RuntimeException("Errore durante la creazione del libro", e);
         }
     }
 
@@ -155,5 +162,22 @@ public class ManageBooksController {
             logger.warn("Dati libro non validi id={}", book.getId(), e);
         }
         return bean;
+    }
+    
+    private Book mapBeanToModel(BookBean bean) {
+        return new Book(
+                0, // id generato dal DB
+                bean.getTitle(),
+                bean.getAuthor(),
+                bean.getCategory(),
+                bean.getYear(),
+                bean.getPublisher(),
+                bean.getPages(),
+                bean.getIsbn(),
+                bean.getStock(),
+                bean.getPlot(),
+                bean.getImagePath(),
+                bean.getPrice()
+        );
     }
 }

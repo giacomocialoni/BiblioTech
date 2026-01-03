@@ -3,7 +3,7 @@ package dao.database;
 import dao.AccountDAO;
 import exception.DAOException;
 import exception.RecordNotFoundException;
-import exception.DuplicateRecordException;
+import exception.EmailAlreadyRegisteredException;
 import model.Admin;
 import model.User;
 import model.Account;
@@ -52,13 +52,14 @@ public class DatabaseAccountDAO implements AccountDAO {
         }
     }
 
+ // DatabaseAccountDAO.java (modifica solo il metodo register)
     @Override
     public boolean register(String email, String password, String firstName, String lastName)
-            throws DAOException, DuplicateRecordException {
+            throws DAOException, EmailAlreadyRegisteredException {  
 
         try {
             if (emailExists(email)) {
-                throw new DuplicateRecordException("Email già registrata");
+                throw new EmailAlreadyRegisteredException(email);
             }
 
             String sql = "INSERT INTO users (email, password, first_name, last_name, role) VALUES (?, ?, ?, ?, 'logged_user')";
@@ -73,6 +74,10 @@ public class DatabaseAccountDAO implements AccountDAO {
                 return stmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
+            if (e.getErrorCode() == 1062 || e.getMessage().contains("Duplicate entry")) {
+                throw new EmailAlreadyRegisteredException(email, 
+                    "Questa email è già associata a un account esistente");
+            }
             throw new DAOException("Errore durante la registrazione", e);
         }
     }

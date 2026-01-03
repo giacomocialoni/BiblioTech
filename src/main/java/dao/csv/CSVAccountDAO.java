@@ -2,7 +2,7 @@ package dao.csv;
 
 import dao.AccountDAO;
 import exception.DAOException;
-import exception.DuplicateRecordException;
+import exception.EmailAlreadyRegisteredException;
 import exception.RecordNotFoundException;
 import model.Account;
 import model.Admin;
@@ -49,11 +49,11 @@ public class CSVAccountDAO implements AccountDAO {
     @Override
     public boolean register(String email, String password, 
                            String firstName, String lastName) 
-            throws DAOException, DuplicateRecordException {
+            throws DAOException, EmailAlreadyRegisteredException {
         
         // Verifica se l'email esiste già
         if (emailExists(email)) {
-            throw new DuplicateRecordException("Email già registrata: " + email);
+            throw new EmailAlreadyRegisteredException("Email già registrata: " + email);
         }
         
         // Leggi tutti gli utenti

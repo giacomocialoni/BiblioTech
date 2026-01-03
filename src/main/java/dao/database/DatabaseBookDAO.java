@@ -2,6 +2,7 @@ package dao.database;
 
 import dao.BookDAO;
 import exception.DAOException;
+import exception.DuplicateBookException;
 import exception.RecordNotFoundException;
 import model.Book;
 
@@ -58,7 +59,7 @@ public class DatabaseBookDAO implements BookDAO {
     }
 
     @Override
-    public void addBook(Book book) throws DAOException {
+    public void addBook(Book book) throws DAOException, DuplicateBookException {
         String sql = "INSERT INTO books (title, author, category, year, publisher, pages, isbn, stock, plot, image_path, price) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
@@ -68,7 +69,6 @@ public class DatabaseBookDAO implements BookDAO {
             fillBookPreparedStatement(stmt, book);
             stmt.executeUpdate();
 
-            // Recupera l'ID auto-generato
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     book.setId(generatedKeys.getInt(1));
@@ -76,8 +76,28 @@ public class DatabaseBookDAO implements BookDAO {
             }
 
         } catch (SQLException e) {
+            if (isDuplicateError(e)) {
+                String duplicateType = detectDuplicateType(e, book);
+                throw new DuplicateBookException(book.getIsbn(), book.getTitle(), duplicateType);
+            }
             throw new DAOException("Errore durante l'aggiunta del libro: " + book.getTitle(), e);
         }
+    }
+    
+    private boolean isDuplicateError(SQLException e) {
+        return e.getErrorCode() == 1062 || 
+               e.getMessage() != null && 
+               e.getMessage().contains("Duplicate entry");
+    }
+    
+    private String detectDuplicateType(SQLException e, Book book) {
+        if (e.getMessage() == null) return "unknown";
+        
+        String message = e.getMessage().toLowerCase();
+        if (message.contains("isbn")) {
+            return "isbn";
+        }
+        return "title";
     }
 
     @Override
