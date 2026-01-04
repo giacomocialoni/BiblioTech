@@ -135,7 +135,12 @@ public class CSVWishlistDAO implements WishlistDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+            String header = reader.readLine(); // Memorizza l'header
+            if (header == null) {
+                LOGGER.debug("File wishlist vuoto");
+                return wishlist;
+            }
+            LOGGER.trace("Header wishlist durante recupero per utente: {}", header);
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
@@ -165,7 +170,12 @@ public class CSVWishlistDAO implements WishlistDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+            String header = reader.readLine(); // Memorizza l'header
+            if (header == null) {
+                LOGGER.debug("File wishlist vuoto");
+                return users;
+            }
+            LOGGER.trace("Header wishlist durante recupero per libro: {}", header);
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {

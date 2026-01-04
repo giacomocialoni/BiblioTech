@@ -70,7 +70,12 @@ public class CSVUserDAO implements UserDAO {
         String lowerSearch = searchTerm.toLowerCase();
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+            String header = reader.readLine(); // Memorizza l'header
+            if (header == null) {
+                LOGGER.debug("File utenti vuoto durante ricerca");
+                return users;
+            }
+            LOGGER.trace("Header durante ricerca: {}", header);
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
@@ -157,7 +162,12 @@ public class CSVUserDAO implements UserDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+            String header = reader.readLine(); // Memorizza l'header
+            if (header == null) {
+                LOGGER.debug("File utenti vuoto durante recupero per ruolo");
+                return users;
+            }
+            LOGGER.trace("Header durante recupero per ruolo: {}", header);
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {

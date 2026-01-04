@@ -96,7 +96,12 @@ public class CSVAccountDAO implements AccountDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+            String header = reader.readLine(); // Memorizza l'header
+            if (header == null) {
+                LOGGER.debug("File utenti vuoto durante verifica email");
+                return false;
+            }
+            LOGGER.trace("Header durante verifica email: {}", header);
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
@@ -123,7 +128,12 @@ public class CSVAccountDAO implements AccountDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+            String header = reader.readLine(); // Memorizza l'header
+            if (header == null) {
+                LOGGER.debug("File utenti vuoto durante lettura completa");
+                return users;
+            }
+            LOGGER.trace("Header durante lettura completa: {}", header);
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
