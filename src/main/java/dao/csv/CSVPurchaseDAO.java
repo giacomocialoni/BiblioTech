@@ -207,7 +207,7 @@ public class CSVPurchaseDAO implements PurchaseDAO {
     }
     
     private List<Purchase> loadAllPurchases() throws DAOException {
-        List<Purchase> purchases = new ArrayList<>();
+    	List<Purchase> purchases = new ArrayList<>();
         Path path = Paths.get(FILE_PATH);
         
         if (!Files.exists(path)) {
@@ -216,6 +216,13 @@ public class CSVPurchaseDAO implements PurchaseDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
+            String header = reader.readLine(); // Leggi e memorizza
+            if (header == null) {
+                LOGGER.warn("File acquisti vuoto");
+                return purchases;
+            }
+            LOGGER.debug("Header file acquisti: {}", header);
+            
             String line;
             int lineNumber = 1;
             int errors = 0;

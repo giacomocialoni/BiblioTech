@@ -92,14 +92,19 @@ public class CSVWishlistDAO implements WishlistDAO {
     
     @Override
     public boolean isInWishlist(String userEmail, int bookId) throws DAOException {
-        Path path = Paths.get(FILE_PATH);
+    	Path path = Paths.get(FILE_PATH);
         if (!Files.exists(path)) {
             LOGGER.debug("File wishlist non trovato, elemento non presente");
             return false;
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+            String header = reader.readLine(); // Leggi e memorizza
+            if (header == null) {
+                LOGGER.warn("File wishlist vuoto");
+                return false;
+            }
+            LOGGER.debug("Header file wishlist: {}", header);
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {

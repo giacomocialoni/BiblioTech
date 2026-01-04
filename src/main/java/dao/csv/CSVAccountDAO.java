@@ -30,7 +30,12 @@ public class CSVAccountDAO implements AccountDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+        	String header = reader.readLine(); // Leggi e memorizza l'header
+            if (header == null) {
+                LOGGER.warn("File utenti vuoto");
+                throw new RecordNotFoundException("Credenziali non valide");
+            }
+            LOGGER.debug("Header file utenti: {}", header);
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {

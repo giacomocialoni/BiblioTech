@@ -234,11 +234,12 @@ public class CSVBookDAO implements BookDAO {
     }
     
     private void loadFromReader(BufferedReader reader) throws IOException {
-        String header = reader.readLine(); // Skip header
+    	String header = reader.readLine(); // Leggi e memorizza l'header
         if (header == null) {
             LOGGER.warn("File libri vuoto o header mancante");
             return;
         }
+        LOGGER.debug("Header file libri: {}", header);
         
         int lineNumber = 1;
         String line;

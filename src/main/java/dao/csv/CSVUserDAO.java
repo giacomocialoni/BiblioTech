@@ -20,14 +20,19 @@ public class CSVUserDAO implements UserDAO {
     
     @Override
     public User getUser(String email) throws DAOException, RecordNotFoundException {
-        Path path = Paths.get(FILE_PATH);
+    	Path path = Paths.get(FILE_PATH);
         if (!Files.exists(path)) {
             LOGGER.warn("File utenti non trovato durante ricerca per email: {}", email);
             throw new RecordNotFoundException("Utente non trovato con email: " + email);
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+            String header = reader.readLine(); // Leggi e memorizza
+            if (header == null) {
+                LOGGER.warn("File utenti vuoto");
+                throw new RecordNotFoundException("Utente non trovato con email: " + email);
+            }
+            LOGGER.debug("Header file utenti: {}", header);
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {

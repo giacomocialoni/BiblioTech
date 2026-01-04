@@ -21,7 +21,7 @@ public class CSVCategoryDAO implements CategoryDAO {
     
     @Override
     public List<Category> getAllCategories() throws DAOException {
-        List<Category> categories = new ArrayList<>();
+    	List<Category> categories = new ArrayList<>();
         Path path = Paths.get(FILE_PATH);
         
         if (!Files.exists(path)) {
@@ -30,6 +30,13 @@ public class CSVCategoryDAO implements CategoryDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
+            String header = reader.readLine(); // Leggi e memorizza
+            if (header == null) {
+                LOGGER.warn("File categorie vuoto");
+                return categories;
+            }
+            LOGGER.debug("Header file categorie: {}", header);
+            
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
                 String categoryName = line.trim();

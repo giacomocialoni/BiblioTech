@@ -238,7 +238,7 @@ public class CSVLoanDAO implements LoanDAO {
     }
     
     private List<Loan> loadAllLoans() throws DAOException {
-        List<Loan> loans = new ArrayList<>();
+    	List<Loan> loans = new ArrayList<>();
         Path path = Paths.get(FILE_PATH);
         
         if (!Files.exists(path)) {
@@ -247,6 +247,13 @@ public class CSVLoanDAO implements LoanDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
+            String header = reader.readLine(); // Leggi e memorizza
+            if (header == null) {
+                LOGGER.warn("File prestiti vuoto");
+                return loans;
+            }
+            LOGGER.debug("Header file prestiti: {}", header);
+            
             String line;
             int lineNumber = 1;
             int errors = 0;
