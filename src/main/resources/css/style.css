@@ -128,9 +128,6 @@
     -fx-effect: dropshadow(gaussian, rgba(139, 115, 85, 0.2), 10, 0, 0, 3);
 }
 
-.logout-button:pressed {
-    -fx-background-color: #f5f0ea;
-}
 /* INFO */
 .info-container {
     -fx-background-color: transparent;
