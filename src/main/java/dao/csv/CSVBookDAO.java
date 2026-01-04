@@ -5,6 +5,9 @@ import exception.DAOException;
 import exception.RecordNotFoundException;
 import model.Book;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.net.URL;
 import java.nio.file.*;
@@ -13,7 +16,8 @@ import java.util.List;
 
 public class CSVBookDAO implements BookDAO {
     
-    private static final String FILE_PATH = "data/book.csv";
+    private static final Logger LOGGER = LoggerFactory.getLogger(CSVBookDAO.class);
+    private static final String FILE_PATH = "src/main/resources/data/book.csv";
     private final List<Book> books;
     
     public CSVBookDAO() throws DAOException {
@@ -31,7 +35,10 @@ public class CSVBookDAO implements BookDAO {
         return books.stream()
                 .filter(book -> book.getId() == id)
                 .findFirst()
-                .orElseThrow(() -> new RecordNotFoundException("Libro con ID " + id + " non trovato"));
+                .orElseThrow(() -> {
+                    LOGGER.warn("Libro con ID {} non trovato", id);
+                    return new RecordNotFoundException("Libro con ID " + id + " non trovato");
+                });
     }
     
     @Override
@@ -43,6 +50,7 @@ public class CSVBookDAO implements BookDAO {
         }
         books.add(book);
         saveBooks();
+        LOGGER.info("Libro aggiunto: {} (ID: {})", book.getTitle(), book.getId());
     }
     
     @Override
@@ -51,9 +59,11 @@ public class CSVBookDAO implements BookDAO {
             if (books.get(i).getId() == book.getId()) {
                 books.set(i, book);
                 saveBooks();
+                LOGGER.info("Libro aggiornato: {} (ID: {})", book.getTitle(), book.getId());
                 return;
             }
         }
+        LOGGER.warn("Tentativo di aggiornamento libro non trovato: ID {}", book.getId());
         throw new RecordNotFoundException("Libro con ID " + book.getId() + " non trovato");
     }
     
@@ -61,9 +71,11 @@ public class CSVBookDAO implements BookDAO {
     public void deleteBook(int id) throws DAOException, RecordNotFoundException {
         boolean removed = books.removeIf(book -> book.getId() == id);
         if (!removed) {
+            LOGGER.warn("Tentativo di eliminazione libro non trovato: ID {}", id);
             throw new RecordNotFoundException("Libro con ID " + id + " non trovato");
         }
         saveBooks();
+        LOGGER.info("Libro eliminato: ID {}", id);
     }
     
     @Override
@@ -79,8 +91,9 @@ public class CSVBookDAO implements BookDAO {
                     if (yearFrom != null && !yearFrom.isEmpty()) {
                         try {
                             int yearFromInt = Integer.parseInt(yearFrom);
-                            if (book.getYear() < yearFromInt) return false;
+                            return book.getYear() >= yearFromInt;
                         } catch (NumberFormatException e) {
+                            LOGGER.debug("Formato anno non valido: {}", yearFrom);
                             return true;
                         }
                     }
@@ -90,8 +103,9 @@ public class CSVBookDAO implements BookDAO {
                     if (yearTo != null && !yearTo.isEmpty()) {
                         try {
                             int yearToInt = Integer.parseInt(yearTo);
-                            if (book.getYear() > yearToInt) return false;
+                            return book.getYear() <= yearToInt;
                         } catch (NumberFormatException e) {
+                            LOGGER.debug("Formato anno non valido: {}", yearTo);
                             return true;
                         }
                     }
@@ -106,15 +120,20 @@ public class CSVBookDAO implements BookDAO {
         books.stream()
                 .filter(book -> book.getId() == bookId)
                 .findFirst()
-                .ifPresent(book -> {
-                    int newStock = Math.max(0, book.getStock() + quantity);
-                    book.setStock(newStock);
-                    try {
-                        saveBooks();
-                    } catch (DAOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                .ifPresentOrElse(
+                    book -> {
+                        int newStock = Math.max(0, book.getStock() + quantity);
+                        book.setStock(newStock);
+                        try {
+                            saveBooks();
+                            LOGGER.info("Stock aggiornato per libro ID {}: nuova quantità {}", bookId, newStock);
+                        } catch (DAOException e) {
+                            LOGGER.error("Errore durante il salvataggio dello stock per libro ID {}", bookId, e);
+                            throw new RuntimeException(e);
+                        }
+                    },
+                    () -> LOGGER.warn("Tentativo di aggiornamento stock per libro non trovato: ID {}", bookId)
+                );
     }
     
     @Override
@@ -166,20 +185,22 @@ public class CSVBookDAO implements BookDAO {
         
         try {
             // Prova a caricare dalla risorsa
-            URL resource = getClass().getClassLoader().getResource(FILE_PATH);
+            URL resource = getClass().getClassLoader().getResource("data/book.csv");
             if (resource != null) {
                 try (BufferedReader reader = new BufferedReader(
                         new InputStreamReader(resource.openStream()))) {
                     loadFromReader(reader);
+                    LOGGER.info("Libri caricati da risorsa: {} libri", books.size());
                     return;
                 }
             }
             
             // Prova a caricare dal filesystem
-            Path path = Paths.get("src/main/resources", FILE_PATH);
+            Path path = Paths.get(FILE_PATH);
             if (Files.exists(path)) {
                 try (BufferedReader reader = Files.newBufferedReader(path)) {
                     loadFromReader(reader);
+                    LOGGER.info("Libri caricati da file: {} libri", books.size());
                     return;
                 }
             }
@@ -187,8 +208,10 @@ public class CSVBookDAO implements BookDAO {
             // Se il file non esiste, crea uno di esempio
             createSampleData();
             saveBooks();
+            LOGGER.warn("File libri non trovato, creato dataset di esempio");
             
         } catch (IOException e) {
+            LOGGER.error("Errore durante il caricamento dei libri", e);
             throw new DAOException("Errore durante il caricamento dei libri", e);
         }
     }
@@ -211,25 +234,38 @@ public class CSVBookDAO implements BookDAO {
     }
     
     private void loadFromReader(BufferedReader reader) throws IOException {
-        String line = reader.readLine(); // Skip header
+        String header = reader.readLine(); // Skip header
+        if (header == null) {
+            LOGGER.warn("File libri vuoto o header mancante");
+            return;
+        }
         
         int lineNumber = 1;
+        String line;
+        int errorCount = 0;
+        
         while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
             try {
                 Book book = parseBook(line, lineNumber);
                 if (book != null) {
                     books.add(book);
+                } else {
+                    errorCount++;
                 }
             } catch (Exception e) {
-                System.err.println("Errore nel parsing della riga " + lineNumber + ": " + line);
-                e.printStackTrace();
+                LOGGER.warn("Errore nel parsing della riga {}: {}", lineNumber, line, e);
+                errorCount++;
             }
             lineNumber++;
+        }
+        
+        if (errorCount > 0) {
+            LOGGER.warn("Parsing completato con {} errori su {} righe", errorCount, lineNumber-1);
         }
     }
     
     private void saveBooks() throws DAOException {
-        Path path = Paths.get("src/main/resources", FILE_PATH);
+        Path path = Paths.get(FILE_PATH);
         
         try {
             Files.createDirectories(path.getParent());
@@ -245,6 +281,7 @@ public class CSVBookDAO implements BookDAO {
             }
             
         } catch (IOException e) {
+            LOGGER.error("Errore durante il salvataggio dei libri", e);
             throw new DAOException("Errore durante il salvataggio dei libri", e);
         }
     }
@@ -253,7 +290,7 @@ public class CSVBookDAO implements BookDAO {
         List<String> fields = parseCSVLine(line);
         
         if (fields.size() < 12) {
-            System.err.println("Linea " + lineNumber + ": Numero insufficiente di campi (" + fields.size() + " invece di 12)");
+            LOGGER.warn("Riga {}: Numero insufficiente di campi ({}, attesi 12)", lineNumber, fields.size());
             return null;
         }
         
@@ -273,12 +310,10 @@ public class CSVBookDAO implements BookDAO {
                 Double.parseDouble(fields.get(11).trim())
             );
         } catch (NumberFormatException e) {
-            System.err.println("Errore formato numerico in riga " + lineNumber + ": " + line);
-            System.err.println("Campi: " + fields);
+            LOGGER.warn("Errore formato numerico in riga {}: {}", lineNumber, line);
             return null;
         } catch (Exception e) {
-            System.err.println("Errore generale in riga " + lineNumber + ": " + line);
-            e.printStackTrace();
+            LOGGER.warn("Errore generale in riga {}: {}", lineNumber, line, e);
             return null;
         }
     }
@@ -313,21 +348,21 @@ public class CSVBookDAO implements BookDAO {
     private String formatBook(Book book) {
         return String.join(",",
             String.valueOf(book.getId()),
-            escapeComma(book.getTitle()),
-            escapeComma(book.getAuthor()),
-            escapeComma(book.getCategory()),
+            escapeCSV(book.getTitle()),
+            escapeCSV(book.getAuthor()),
+            escapeCSV(book.getCategory()),
             String.valueOf(book.getYear()),
-            escapeComma(book.getPublisher()),
+            escapeCSV(book.getPublisher()),
             String.valueOf(book.getPages()),
-            escapeComma(book.getIsbn()),
+            escapeCSV(book.getIsbn()),
             String.valueOf(book.getStock()),
-            escapeComma(book.getPlot()),
-            escapeComma(book.getImagePath()),
+            escapeCSV(book.getPlot()),
+            escapeCSV(book.getImagePath() != null ? book.getImagePath() : ""),
             String.valueOf(book.getPrice())
         );
     }
     
-    private String escapeComma(String text) {
+    private String escapeCSV(String text) {
         if (text == null) return "";
         if (text.contains(",") || text.contains("\"") || text.contains("\n")) {
             return "\"" + text.replace("\"", "\"\"") + "\"";

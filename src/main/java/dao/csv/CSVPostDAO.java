@@ -4,6 +4,9 @@ import dao.PostDAO;
 import model.Post;
 import exception.DAOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.nio.file.*;
 import java.time.LocalDateTime;
@@ -13,19 +16,25 @@ import java.util.List;
 
 public class CSVPostDAO implements PostDAO {
     
+    private static final Logger LOGGER = LoggerFactory.getLogger(CSVPostDAO.class);
     private static final String FILE_PATH = "src/main/resources/data/posts.csv";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     @Override
     public List<Post> getAllPostsOrderedByDate() throws DAOException {
         List<Post> posts = new ArrayList<>();
+        Path path = Paths.get(FILE_PATH);
         
-        if (!Files.exists(Paths.get(FILE_PATH))) {
+        if (!Files.exists(path)) {
+            LOGGER.info("File post non trovato, restituita lista vuota");
             return posts; // File non esiste, restituisci lista vuota
         }
         
-        try (BufferedReader reader = Files.newBufferedReader(Paths.get(FILE_PATH))) {
-            String line = reader.readLine(); // Skip header
+        try (BufferedReader reader = Files.newBufferedReader(path)) {
+            String line;
+            int lineNumber = 1;
+            int loaded = 0;
+            int errors = 0;
             
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
                 try {
@@ -48,17 +57,29 @@ public class CSVPostDAO implements PostDAO {
                         String role = userEmail.contains("admin") ? "admin" : "user";
                         
                         posts.add(new Post(userEmail, authorName, role, title, content, postDate));
+                        loaded++;
+                    } else {
+                        LOGGER.warn("Riga {}: numero insufficiente di campi ({})", lineNumber, fields.size());
+                        errors++;
                     }
                 } catch (Exception e) {
-                    System.err.println("Errore nel parsing del post: " + line);
-                    e.printStackTrace();
+                    LOGGER.warn("Errore nel parsing del post riga {}: {}", lineNumber, line, e);
+                    errors++;
                 }
+                lineNumber++;
+            }
+            
+            if (errors > 0) {
+                LOGGER.warn("Caricamento post completato con {} errori", errors);
             }
             
             // Ordina per data discendente
             posts.sort((p1, p2) -> p2.getPostDate().compareTo(p1.getPostDate()));
             
+            LOGGER.debug("Caricati {} post", loaded);
+            
         } catch (IOException e) {
+            LOGGER.error("Errore durante la lettura dei post da CSV", e);
             throw new DAOException("Errore durante la lettura dei post da CSV", e);
         }
         
@@ -83,15 +104,18 @@ public class CSVPostDAO implements PostDAO {
             // Formatta la data con le virgolette come nel file esistente
             String line = String.join(",",
                 post.getUserEmail(),
-                "\"" + post.getTitle().replace("\"", "\"\"") + "\"",
-                "\"" + post.getContent().replace("\"", "\"\"") + "\"",
+                "\"" + escapeQuotes(post.getTitle()) + "\"",
+                "\"" + escapeQuotes(post.getContent()) + "\"",
                 "\"" + post.getPostDate().format(DATE_FORMATTER) + "\""
             );
             
             writer.write(line);
             writer.newLine();
             
+            LOGGER.info("Post aggiunto da {}: {}", post.getUserEmail(), post.getTitle());
+            
         } catch (IOException e) {
+            LOGGER.error("Errore durante il salvataggio del post in CSV", e);
             throw new DAOException("Errore durante il salvataggio del post in CSV", e);
         }
     }
@@ -147,5 +171,10 @@ public class CSVPostDAO implements PostDAO {
         fields.add(currentField.toString());
         
         return fields;
+    }
+    
+    private String escapeQuotes(String text) {
+        if (text == null) return "";
+        return text.replace("\"", "\"\"");
     }
 }

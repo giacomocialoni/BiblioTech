@@ -6,6 +6,9 @@ import exception.DuplicateRecordException;
 import exception.RecordNotFoundException;
 import model.Category;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.nio.file.*;
 import java.util.ArrayList;
@@ -13,28 +16,34 @@ import java.util.List;
 
 public class CSVCategoryDAO implements CategoryDAO {
     
+    private static final Logger LOGGER = LoggerFactory.getLogger(CSVCategoryDAO.class);
     private static final String FILE_PATH = "src/main/resources/data/categories.csv";
     
     @Override
     public List<Category> getAllCategories() throws DAOException {
         List<Category> categories = new ArrayList<>();
+        Path path = Paths.get(FILE_PATH);
         
-        if (!Files.exists(Paths.get(FILE_PATH))) {
+        if (!Files.exists(path)) {
+            LOGGER.info("File categorie non trovato, restituita lista vuota");
             return categories;
         }
         
-        try (BufferedReader reader = Files.newBufferedReader(Paths.get(FILE_PATH))) {
-            reader.readLine(); // Skip header
-            
+        try (BufferedReader reader = Files.newBufferedReader(path)) {
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
-                categories.add(new Category(line.trim()));
+                String categoryName = line.trim();
+                if (!categoryName.isEmpty()) {
+                    categories.add(new Category(categoryName));
+                }
             }
             
         } catch (IOException e) {
+            LOGGER.error("Errore durante il recupero delle categorie", e);
             throw new DAOException("Errore durante il recupero delle categorie", e);
         }
         
+        LOGGER.debug("Recuperate {} categorie", categories.size());
         return categories;
     }
     
@@ -44,6 +53,7 @@ public class CSVCategoryDAO implements CategoryDAO {
         List<Category> categories = getAllCategories();
         for (Category existing : categories) {
             if (existing.getCategory().equalsIgnoreCase(category.getCategory())) {
+                LOGGER.warn("Tentativo di aggiunta categoria duplicata: {}", category.getCategory());
                 throw new DuplicateRecordException(
                     "La categoria esiste già: " + category.getCategory());
             }
@@ -52,6 +62,7 @@ public class CSVCategoryDAO implements CategoryDAO {
         // Aggiungi nuova categoria
         categories.add(category);
         saveAllCategories(categories);
+        LOGGER.info("Categoria aggiunta: {}", category.getCategory());
     }
     
     @Override
@@ -62,10 +73,12 @@ public class CSVCategoryDAO implements CategoryDAO {
             cat -> cat.getCategory().equalsIgnoreCase(categoryName));
         
         if (!removed) {
+            LOGGER.warn("Tentativo di eliminazione categoria non trovata: {}", categoryName);
             throw new RecordNotFoundException("Categoria non trovata: " + categoryName);
         }
         
         saveAllCategories(categories);
+        LOGGER.info("Categoria eliminata: {}", categoryName);
     }
     
     private void saveAllCategories(List<Category> categories) throws DAOException {
@@ -87,6 +100,7 @@ public class CSVCategoryDAO implements CategoryDAO {
             }
             
         } catch (IOException e) {
+            LOGGER.error("Errore durante il salvataggio delle categorie", e);
             throw new DAOException("Errore durante il salvataggio delle categorie", e);
         }
     }
