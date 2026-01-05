@@ -30,6 +30,7 @@ public class ReturnLoanControllerGUI {
 
     private boolean initialized = false;
     private String searchMode = "user";
+    private static final String ACTIVE = "active";
 
     public void setStateManager(StateManager stateManager) {
         this.stateManager = stateManager;
@@ -63,12 +64,12 @@ public class ReturnLoanControllerGUI {
     }
 
     private void updateFilterButtons() {
-        userFilterButton.getStyleClass().remove("active");
-        bookFilterButton.getStyleClass().remove("active");
+        userFilterButton.getStyleClass().remove(ACTIVE);
+        bookFilterButton.getStyleClass().remove(ACTIVE);
         if ("user".equals(searchMode)) {
-            userFilterButton.getStyleClass().add("active");
+            userFilterButton.getStyleClass().add(ACTIVE);
         } else {
-            bookFilterButton.getStyleClass().add("active");
+            bookFilterButton.getStyleClass().add(ACTIVE);
         }
     }
 

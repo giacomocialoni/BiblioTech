@@ -16,6 +16,8 @@ import view.components.BookDetailFactory;
 
 public class BookDetailControllerGUI {
 
+	private static final String IN_WISHLIST = "in-wishlist";
+	
     @FXML private Label titleLabel;
     @FXML private Label authorLabel;
     @FXML private Label genreLabel;
@@ -65,10 +67,10 @@ public class BookDetailControllerGUI {
         
         if (Session.getInstance().isLoggedIn() && appController.isInWishlist(bookId)) {
             wishlistButton.setText("Rimuovi");
-            wishlistButton.getStyleClass().add("in-wishlist");
+            wishlistButton.getStyleClass().add(IN_WISHLIST);
         } else {
             wishlistButton.setText("Aggiungi");
-            wishlistButton.getStyleClass().remove("in-wishlist");
+            wishlistButton.getStyleClass().remove(IN_WISHLIST);
         }
     }
 
@@ -111,14 +113,14 @@ public class BookDetailControllerGUI {
             success = appController.removeFromWishlist(currentBook.getId());
             if (success) {
                 wishlistButton.setText("Aggiungi");
-                wishlistButton.getStyleClass().remove("in-wishlist");
+                wishlistButton.getStyleClass().remove(IN_WISHLIST);
             }
         } else {
             success = appController.addToWishlist(currentBook.getId());
             if (success) {
                 wishlistButton.setText("Rimuovi");
-                if (!wishlistButton.getStyleClass().contains("in-wishlist")) {
-                    wishlistButton.getStyleClass().add("in-wishlist");
+                if (!wishlistButton.getStyleClass().contains(IN_WISHLIST)) {
+                    wishlistButton.getStyleClass().add(IN_WISHLIST);
                 }
             }
         }

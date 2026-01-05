@@ -16,49 +16,53 @@ public class InMemoryBookDAO implements BookDAO {
 
     public InMemoryBookDAO() {
         // Libri di esempio
+
+        // Avventura
         books.add(new Book(
                 1,
-                "Clean Code",
-                "Robert C. Martin",
-                "Programming",
-                2008,
-                "Prentice Hall",
-                464,
-                "9780132350884",
-                5,
-                "A Handbook of Agile Software Craftsmanship",
+                "Into the Wild",
+                "Jon Krakauer",
+                "Adventure",
+                1996,
+                "Villard",
+                224,
+                "9780679428502",
+                4,
+                "The true story of a young man who abandoned everything to live in the Alaskan wilderness.",
                 null,
-                39.99
+                14.99
         ));
 
+        // Biografia
         books.add(new Book(
                 2,
-                "Design Patterns",
-                "GoF",
-                "Programming",
-                1994,
-                "Addison-Wesley",
-                395,
-                "9780201633610",
+                "Steve Jobs",
+                "Walter Isaacson",
+                "Biography",
+                2011,
+                "Simon & Schuster",
+                656,
+                "9781451648539",
                 3,
-                "Elements of Reusable Object-Oriented Software",
+                "The authorized self-titled biography of Apple co-founder Steve Jobs.",
                 null,
-                49.99
+                19.99
         ));
 
+        // Narrativo
         books.add(new Book(
                 3,
-                "Effective Java",
-                "Joshua Bloch",
-                "Programming",
-                2018,
-                "Addison-Wesley",
-                416,
-                "9780134685991",
-                4,
-                "Best practices for the Java platform",
+                "The Old Man and the Sea",
+                "Ernest Hemingway",
+                "Narrative",
+                1952,
+                "Charles Scribner's Sons",
+                128,
+                "9780684801223",
+                6,
+                "A short novel about an aging fisherman's struggle with a giant marlin.",
                 null,
-                45.99
+                11.99
         ));
     }
 

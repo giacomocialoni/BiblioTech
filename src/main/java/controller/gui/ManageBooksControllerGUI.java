@@ -27,6 +27,7 @@ public class ManageBooksControllerGUI {
     private ManageBooksCardFactory cardFactory;
     
     private boolean initialized = false;
+    private static final String SUCCESS = "Successo", ERROR = "Errore";
 
     public void setStateManager(StateManager stateManager) {
         this.stateManager = stateManager;
@@ -112,9 +113,9 @@ public class ManageBooksControllerGUI {
         try {
             appController.increaseStock(bookId, quantity);
             loadBooks(); // Ricarica la lista
-            showSuccess("Successo", "Stock aumentato di " + quantity + " unità");
+            showSuccess(SUCCESS, "Stock aumentato di " + quantity + " libri");
         } catch (Exception e) {
-            showError("Errore", "Errore nell'aumentare lo stock: " + e.getMessage());
+            showError(ERROR, "Errore nell'aumentare lo stock: " + e.getMessage());
         }
     }
 
@@ -124,12 +125,12 @@ public class ManageBooksControllerGUI {
             if (book != null && book.getStock() >= quantity) {
                 appController.decreaseStock(bookId, quantity);
                 loadBooks(); // Ricarica la lista
-                showSuccess("Successo", "Stock diminuito di " + quantity + " unità");
+                showSuccess(SUCCESS, "Stock diminuito di " + quantity + " libri");
             } else {
-                showError("Errore", "Stock insufficiente per diminuire di " + quantity + " unità");
+                showError(ERROR, "Stock insufficiente");
             }
         } catch (Exception e) {
-            showError("Errore", "Errore nel diminuire lo stock: " + e.getMessage());
+            showError(ERROR, "Errore nel diminuire lo stock: " + e.getMessage());
         }
     }
 
@@ -144,10 +145,10 @@ public class ManageBooksControllerGUI {
             if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
                 appController.deleteBook(bookId);
                 loadBooks(); // Ricarica la lista
-                showSuccess("Successo", "Libro eliminato con successo");
+                showSuccess(SUCCESS, "Libro eliminato con successo");
             }
         } catch (Exception e) {
-            showError("Errore", "Errore nell'eliminare il libro: " + e.getMessage());
+            showError(ERROR, "Errore nell'eliminare il libro: " + e.getMessage());
         }
     }
 

@@ -13,6 +13,7 @@ import java.util.List;
 public class DatabaseBookDAO implements BookDAO {
 
     private final DBConnection dbConnection;
+    private static final String TITLE = "title";
 
     public DatabaseBookDAO(DBConnection dbConnection) {
         this.dbConnection = dbConnection;
@@ -97,7 +98,7 @@ public class DatabaseBookDAO implements BookDAO {
         if (message.contains("isbn")) {
             return "isbn";
         }
-        return "title";
+        return TITLE;
     }
 
     @Override
@@ -150,7 +151,7 @@ public class DatabaseBookDAO implements BookDAO {
 
         // Filtro per ricerca
         if (searchText != null && !searchText.trim().isEmpty()) {
-            if ("title".equalsIgnoreCase(searchMode)) {
+            if (TITLE.equalsIgnoreCase(searchMode)) {
                 sql.append("AND LOWER(title) LIKE ? ");
                 params.add("%" + searchText.toLowerCase() + "%");
             } else if ("author".equalsIgnoreCase(searchMode)) {
@@ -305,7 +306,7 @@ public class DatabaseBookDAO implements BookDAO {
     private Book extractBookFromResultSet(ResultSet rs) throws SQLException {
         return new Book(
             rs.getInt("id"),
-            rs.getString("title"),
+            rs.getString(TITLE),
             rs.getString("author"),
             rs.getString("category"),
             rs.getInt("year"),

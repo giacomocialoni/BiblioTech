@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 public class ManageBooksCardFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(ManageBooksCardFactory.class);
+    private static final String BOOK_DETAIL = "book-detail";
 
     public ManageBooksCardFactory() {}
 
@@ -107,13 +108,13 @@ public class ManageBooksCardFactory {
         authorLabel.getStyleClass().add("book-author");
         
         Label isbnLabel = new Label("ISBN: " + book.getIsbn());
-        isbnLabel.getStyleClass().add("book-detail");
+        isbnLabel.getStyleClass().add(BOOK_DETAIL);
         
         Label categoryLabel = new Label("Categoria: " + book.getCategory());
-        categoryLabel.getStyleClass().add("book-detail");
+        categoryLabel.getStyleClass().add(BOOK_DETAIL);
         
         Label yearLabel = new Label("Anno: " + book.getYear());
-        yearLabel.getStyleClass().add("book-detail");
+        yearLabel.getStyleClass().add(BOOK_DETAIL);
         
         Label priceLabel = new Label("Prezzo: €" + String.format("%.2f", book.getPrice()));
         priceLabel.getStyleClass().add("book-price");

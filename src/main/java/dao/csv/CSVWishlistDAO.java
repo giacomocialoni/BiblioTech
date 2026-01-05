@@ -16,7 +16,7 @@ import java.util.List;
 public class CSVWishlistDAO implements WishlistDAO {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(CSVWishlistDAO.class);
-    private static final String FILE_PATH = "src/main/resources/data/wishlist.csv";
+    private static final String FILE_PATH = "src/main/resources/data/wishlist.csv", WISHLIST_FILE_EMPTY = "File wishlist vuoto";
     
     @Override
     public void addToWishlist(String userEmail, int bookId) throws DAOException {
@@ -101,7 +101,7 @@ public class CSVWishlistDAO implements WishlistDAO {
         try (BufferedReader reader = Files.newBufferedReader(path)) {
             String header = reader.readLine(); // Leggi e memorizza
             if (header == null) {
-                LOGGER.warn("File wishlist vuoto");
+                LOGGER.warn(WISHLIST_FILE_EMPTY);
                 return false;
             }
             LOGGER.debug("Header file wishlist: {}", header);
@@ -137,7 +137,7 @@ public class CSVWishlistDAO implements WishlistDAO {
         try (BufferedReader reader = Files.newBufferedReader(path)) {
             String header = reader.readLine(); // Memorizza l'header
             if (header == null) {
-                LOGGER.debug("File wishlist vuoto");
+                LOGGER.debug(WISHLIST_FILE_EMPTY);
                 return wishlist;
             }
             LOGGER.trace("Header wishlist durante recupero per utente: {}", header);
@@ -172,7 +172,7 @@ public class CSVWishlistDAO implements WishlistDAO {
         try (BufferedReader reader = Files.newBufferedReader(path)) {
             String header = reader.readLine(); // Memorizza l'header
             if (header == null) {
-                LOGGER.debug("File wishlist vuoto");
+                LOGGER.debug(WISHLIST_FILE_EMPTY);
                 return users;
             }
             LOGGER.trace("Header wishlist durante recupero per libro: {}", header);

@@ -22,7 +22,8 @@ import java.util.stream.Collectors;
 public class ManageUsersController {
 
     private static final Logger logger = LoggerFactory.getLogger(ManageUsersController.class);
-
+    private static final String DATE_FORMAT = "dd/MM/yyyy";
+    
     private final BookDAO bookDAO;
     private final UserDAO userDAO;
     private final LoanDAO loanDAO;
@@ -109,7 +110,7 @@ public class ManageUsersController {
         String bookTitle = book != null ? book.getTitle() : "Libro sconosciuto";
         
         String dateText = lastPurchase.getStatusDate() != null ?
-                lastPurchase.getStatusDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) :
+                lastPurchase.getStatusDate().format(DateTimeFormatter.ofPattern(DATE_FORMAT)) :
                 "Data non disponibile";
         
         return "Ultimo acquisto: " + bookTitle + " (" + dateText + ")";
@@ -134,9 +135,9 @@ public class ManageUsersController {
         String bookTitle = book != null ? book.getTitle() : "Libro sconosciuto";
         
         String dateText = lastLoan.getLoanedDate() != null ?
-                lastLoan.getLoanedDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) :
+                lastLoan.getLoanedDate().format(DateTimeFormatter.ofPattern(DATE_FORMAT)) :
                 (lastLoan.getReservedDate() != null ?
-                 lastLoan.getReservedDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " (prenotato)" :
+                 lastLoan.getReservedDate().format(DateTimeFormatter.ofPattern(DATE_FORMAT)) + " (prenotato)" :
                  "Data non disponibile");
         
         return "Ultimo prestito: " + bookTitle + " (" + dateText + ")";

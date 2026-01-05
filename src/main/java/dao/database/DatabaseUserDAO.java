@@ -11,6 +11,7 @@ import java.util.List;
 public class DatabaseUserDAO implements UserDAO {
 
     private final DBConnection dbConnection;
+    private static final String EMAIL = "email", PASSWORD = "password", FIRST_NAME = "first_name", LAST_NAME = "last_name";
 
     public DatabaseUserDAO(DBConnection dbConnection) {
         this.dbConnection = dbConnection;
@@ -26,10 +27,10 @@ public class DatabaseUserDAO implements UserDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return new User(
-                            rs.getString("email"),
-                            rs.getString("password"),
-                            rs.getString("first_name"),
-                            rs.getString("last_name")
+                            rs.getString(EMAIL),
+                            rs.getString(PASSWORD),
+                            rs.getString(FIRST_NAME),
+                            rs.getString(LAST_NAME)
                     );
                 } else {
                     throw new DAOException("Utente non trovato con email: " + email);
@@ -52,10 +53,10 @@ public class DatabaseUserDAO implements UserDAO {
             
             while (rs.next()) {
                 users.add(new User(
-                        rs.getString("email"),
-                        rs.getString("password"),
-                        rs.getString("first_name"),
-                        rs.getString("last_name")
+                        rs.getString(EMAIL),
+                        rs.getString(PASSWORD),
+                        rs.getString(FIRST_NAME),
+                        rs.getString(LAST_NAME)
                         ));
             }
             
@@ -85,10 +86,10 @@ public class DatabaseUserDAO implements UserDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     users.add(new User(
-                            rs.getString("email"),
-                            rs.getString("password"),
-                            rs.getString("first_name"),
-                            rs.getString("last_name")
+                            rs.getString(EMAIL),
+                            rs.getString(PASSWORD),
+                            rs.getString(FIRST_NAME),
+                            rs.getString(LAST_NAME)
                     ));
                 }
             }
