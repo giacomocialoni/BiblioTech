@@ -22,8 +22,6 @@ public class ManageBooksCardFactory {
     private static final Logger logger = LoggerFactory.getLogger(ManageBooksCardFactory.class);
     private static final String BOOK_DETAIL = "book-detail";
 
-    public ManageBooksCardFactory() {}
-
     public HBox createBookCard(BookBean book, Consumer<Integer> onIncreaseStock, 
                               Consumer<Integer> onDecreaseStock, Runnable onRemoveBook) {
         
