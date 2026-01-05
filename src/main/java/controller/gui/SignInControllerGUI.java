@@ -150,57 +150,53 @@ public class SignInControllerGUI {
     }
     
     private boolean validateAllFields() {
-        boolean valid = true;
-        
-        // Controllo campi obbligatori
+        if (!validateMandatoryFields()) return false;
+        if (!validateEmail()) return false;
+        if (!validatePasswordLength()) return false;
+        return validatePasswordMatch();
+    }
+    
+    private boolean validateMandatoryFields() {
+
         if (firstNameField.getText().trim().isEmpty()) {
-            showError("Il nome è obbligatorio!");
-            shakeNode(firstNameField);
-            valid = false;
+            showErrorAndShake("Il nome è obbligatorio!", firstNameField);
+            return false;
         }
-        
+
         if (lastNameField.getText().trim().isEmpty()) {
-            if (valid) showError("Il cognome è obbligatorio!");
-            shakeNode(lastNameField);
-            valid = false;
+            showErrorAndShake("Il cognome è obbligatorio!", lastNameField);
+            return false;
         }
-        
+
         if (emailField.getText().trim().isEmpty()) {
-            if (valid) showError("L'email è obbligatoria!");
-            shakeNode(emailField);
-            valid = false;
+            showErrorAndShake("L'email è obbligatoria!", emailField);
+            return false;
         }
-        
+
         if (passwordField.getText().isEmpty()) {
-            if (valid) showError("La password è obbligatoria!");
-            shakeNode(passwordField);
-            valid = false;
+            showErrorAndShake("La password è obbligatoria!", passwordField);
+            return false;
         }
-        
+
         if (repeatPasswordField.getText().isEmpty()) {
-            if (valid) showError("Devi ripetere la password!");
-            shakeNode(repeatPasswordField);
-            valid = false;
+            showErrorAndShake("Devi ripetere la password!", repeatPasswordField);
+            return false;
         }
-        
-        // Validazione email format
-        if (valid && !isValidEmail(emailField.getText())) {
-            showError("Inserisci un'email valida!");
-            shakeNode(emailField);
-            valid = false;
+
+        return true;
+    }
+    
+    private boolean validateEmail() {
+        if (!isValidEmail(emailField.getText())) {
+            showErrorAndShake("Inserisci un'email valida!", emailField);
+            return false;
         }
-        
-        // Validazione password
-        if (valid && !validatePasswordLength()) {
-            valid = false;
-        }
-        
-        // Validazione password match
-        if (valid && !validatePasswordMatch()) {
-            valid = false;
-        }
-        
-        return valid;
+        return true;
+    }
+    
+    private void showErrorAndShake(String message, Node node) {
+        showError(message);
+        shakeNode(node);
     }
 
     @FXML

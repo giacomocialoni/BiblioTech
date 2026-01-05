@@ -15,7 +15,14 @@ public class InMemoryBookDAO implements BookDAO {
     private int nextId = 4;
 
     public InMemoryBookDAO() {
-        // Libri di esempio
+        initializeSampleBooks();
+    }
+
+    /* =========================
+       INIZIALIZZAZIONE
+       ========================= */
+
+    private void initializeSampleBooks() {
 
         // Avventura
         books.add(new Book(
@@ -66,6 +73,10 @@ public class InMemoryBookDAO implements BookDAO {
         ));
     }
 
+    /* =========================
+       CRUD
+       ========================= */
+
     @Override
     public List<Book> getAllBooks() throws DAOException {
         return new ArrayList<>(books);
@@ -73,10 +84,9 @@ public class InMemoryBookDAO implements BookDAO {
 
     @Override
     public Book getBookById(int id) throws DAOException, RecordNotFoundException {
-        return books.stream()
-                .filter(b -> b.getId() == id)
-                .findFirst()
-                .orElseThrow(() -> new RecordNotFoundException("Libro con ID " + id + " non trovato"));
+        return findBookById(id)
+                .orElseThrow(() ->
+                        new RecordNotFoundException("Libro con ID " + id + " non trovato"));
     }
 
     @Override
@@ -87,95 +97,58 @@ public class InMemoryBookDAO implements BookDAO {
 
     @Override
     public void updateBook(Book book) throws DAOException, RecordNotFoundException {
-        for (int i = 0; i < books.size(); i++) {
-            if (books.get(i).getId() == book.getId()) {
-                books.set(i, book);
-                return;
-            }
-        }
-        throw new RecordNotFoundException("Libro con ID " + book.getId() + " non trovato");
+        int index = findBookIndexById(book.getId());
+        books.set(index, book);
     }
 
     @Override
     public void deleteBook(int id) throws DAOException, RecordNotFoundException {
-        Optional<Book> bookToRemove = books.stream()
-                .filter(b -> b.getId() == id)
-                .findFirst();
-        
-        if (bookToRemove.isPresent()) {
-            books.remove(bookToRemove.get());
-        } else {
-            throw new RecordNotFoundException("Libro con ID " + id + " non trovato");
-        }
+        Book book = getBookById(id);
+        books.remove(book);
     }
 
+    /* =========================
+       SEARCH
+       ========================= */
+
     @Override
-    public List<Book> searchBooks(String searchText, String searchMode, String category,
-                                 String yearFrom, String yearTo, boolean includeUnavailable) 
-                                 throws DAOException {
-        List<Book> result = new ArrayList<>(books);
-        
-        // Filtro per ricerca testo
-        if (searchText != null && !searchText.trim().isEmpty()) {
-            String lowerText = searchText.toLowerCase();
-            if ("title".equalsIgnoreCase(searchMode)) {
-                result.removeIf(b -> !b.getTitle().toLowerCase().contains(lowerText));
-            } else if ("author".equalsIgnoreCase(searchMode)) {
-                result.removeIf(b -> !b.getAuthor().toLowerCase().contains(lowerText));
-            }
-        }
-        
-        // Filtro per categoria
-        if (category != null && !category.trim().isEmpty()) {
-            result.removeIf(b -> !b.getCategory().equalsIgnoreCase(category));
-        }
-        
-        // Filtro per anno
-        if (yearFrom != null && !yearFrom.trim().isEmpty()) {
-            try {
-                int yearFromInt = Integer.parseInt(yearFrom);
-                result.removeIf(b -> b.getYear() < yearFromInt);
-            } catch (NumberFormatException e) {
-                // Ignora
-            }
-        }
-        
-        if (yearTo != null && !yearTo.trim().isEmpty()) {
-            try {
-                int yearToInt = Integer.parseInt(yearTo);
-                result.removeIf(b -> b.getYear() > yearToInt);
-            } catch (NumberFormatException e) {
-                // Ignora
-            }
-        }
-        
-        // Filtro per disponibilità
-        if (!includeUnavailable) {
-            result.removeIf(b -> b.getStock() <= 0);
-        }
-        
-        return result;
+    public List<Book> searchBooks(String searchText,
+                                  String searchMode,
+                                  String category,
+                                  String yearFrom,
+                                  String yearTo,
+                                  boolean includeUnavailable) throws DAOException {
+
+        return books.stream()
+                .filter(b -> matchesSearchText(b, searchText, searchMode))
+                .filter(b -> matchesCategory(b, category))
+                .filter(b -> matchesYearFrom(b, yearFrom))
+                .filter(b -> matchesYearTo(b, yearTo))
+                .filter(b -> includeUnavailable || b.getStock() > 0)
+                .toList();
     }
+
+    /* =========================
+       STOCK & AVAILABILITY
+       ========================= */
 
     @Override
     public void updateStock(int bookId, int quantity) throws DAOException {
-        books.stream()
-                .filter(b -> b.getId() == bookId)
-                .findFirst()
-                .ifPresent(book -> {
-                    int newStock = Math.max(0, book.getStock() + quantity);
-                    book.setStock(newStock);
-                });
+        findBookById(bookId).ifPresent(book ->
+                book.setStock(Math.max(0, book.getStock() + quantity))
+        );
     }
 
     @Override
     public boolean isBookAvailable(int bookId) throws DAOException {
-        return books.stream()
-                .filter(b -> b.getId() == bookId)
-                .findFirst()
+        return findBookById(bookId)
                 .map(b -> b.getStock() > 0)
                 .orElse(false);
     }
+
+    /* =========================
+       FILTRI SEMPLICI
+       ========================= */
 
     @Override
     public List<Book> getBooksByCategory(String category) throws DAOException {
@@ -196,5 +169,61 @@ public class InMemoryBookDAO implements BookDAO {
         return books.stream()
                 .filter(b -> b.getStock() > 0)
                 .toList();
+    }
+
+    /* =========================
+       METODI DI SUPPORTO
+       ========================= */
+
+    private Optional<Book> findBookById(int id) {
+        return books.stream()
+                .filter(b -> b.getId() == id)
+                .findFirst();
+    }
+
+    private int findBookIndexById(int id) throws RecordNotFoundException {
+        for (int i = 0; i < books.size(); i++) {
+            if (books.get(i).getId() == id) {
+                return i;
+            }
+        }
+        throw new RecordNotFoundException("Libro con ID " + id + " non trovato");
+    }
+
+    private boolean matchesSearchText(Book book, String text, String mode) {
+        if (text == null || text.trim().isEmpty()) return true;
+
+        String lowerText = text.toLowerCase();
+
+        if ("author".equalsIgnoreCase(mode)) {
+            return book.getAuthor().toLowerCase().contains(lowerText);
+        }
+
+        return book.getTitle().toLowerCase().contains(lowerText);
+    }
+
+    private boolean matchesCategory(Book book, String category) {
+        return category == null || category.trim().isEmpty()
+                || book.getCategory().equalsIgnoreCase(category);
+    }
+
+    private boolean matchesYearFrom(Book book, String yearFrom) {
+        Integer year = parseYear(yearFrom);
+        return year == null || book.getYear() >= year;
+    }
+
+    private boolean matchesYearTo(Book book, String yearTo) {
+        Integer year = parseYear(yearTo);
+        return year == null || book.getYear() <= year;
+    }
+
+    private Integer parseYear(String year) {
+        try {
+            return (year == null || year.trim().isEmpty())
+                    ? null
+                    : Integer.parseInt(year);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
