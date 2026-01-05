@@ -34,7 +34,6 @@ public class ProfiloControllerGUI {
     @FXML private Label LoansLabel;
     @FXML private Label PurchasesLabel;
 
-    private StateManager stateManager;
     private final ProfiloController appController = new ProfiloController();
     private BookCardFactory bookCardFactory;
     private boolean passwordVisible = false;
@@ -61,8 +60,6 @@ public class ProfiloControllerGUI {
     }
 
     public void setStateManager(StateManager stateManager) {
-        this.stateManager = stateManager;
-
         if (!Session.getInstance().isLoggedIn()) {
             // Se non loggato, vai al login
             stateManager.setState(new app.state.LoginState(stateManager));

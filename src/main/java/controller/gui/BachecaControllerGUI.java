@@ -11,11 +11,9 @@ import view.components.PostCardFactory;
 public class BachecaControllerGUI {
 
     @FXML private VBox postsContainer;
-    private StateManager stateManager; // Aggiungi questo campo
     private final BachecaController controllerApp = new BachecaController();
 
     public void setStateManager(StateManager stateManager) {
-        this.stateManager = stateManager; // Salva lo stateManager
         loadPosts();
     }
 
