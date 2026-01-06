@@ -1,11 +1,11 @@
 package dao.database;
 
 import dao.LoanDAO;
+import exception.DAOException;
+import exception.RecordNotFoundException;
 import model.Loan;
 import utils.Constants;
 import utils.LoanStatus;
-import exception.DAOException;
-import exception.RecordNotFoundException;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -14,22 +14,33 @@ import java.util.List;
 
 public class DatabaseLoanDAO implements LoanDAO {
 
+    private static final String LOAN_COLUMNS =
+            "id, user_email, book_id, reserved_date, loaned_date, returning_date, status";
+
     private final DBConnection dbConnection;
 
     public DatabaseLoanDAO(DBConnection dbConnection) {
         this.dbConnection = dbConnection;
     }
 
+    /* =======================
+       CREATE
+       ======================= */
+
     @Override
     public void addLoan(String userEmail, int bookId) throws DAOException {
-        String sql = "INSERT INTO loans (user_email, book_id, reserved_date, status) VALUES (?, ?, ?, 'RESERVED')";
-        
+        String sql = """
+            INSERT INTO loans (user_email, book_id, reserved_date, status)
+            VALUES (?, ?, ?, ?)
+        """;
+
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, userEmail);
             stmt.setInt(2, bookId);
             stmt.setDate(3, Date.valueOf(LocalDate.now()));
+            stmt.setString(4, LoanStatus.RESERVED.name());
             stmt.executeUpdate();
 
         } catch (SQLException e) {
@@ -37,19 +48,22 @@ public class DatabaseLoanDAO implements LoanDAO {
         }
     }
 
+    /* =======================
+       READ
+       ======================= */
+
     @Override
-    public Loan getLoanById(int loanId) throws DAOException, RecordNotFoundException {
-        String sql = "SELECT * FROM loans WHERE id = ?";
-        
+    public Loan getLoanById(int loanId) throws DAOException {
+        String sql = "SELECT " + LOAN_COLUMNS + " FROM loans WHERE id = ?";
+
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, loanId);
-            ResultSet rs = stmt.executeQuery();
-
-            if (rs.next()) {
-                return extractLoanFromResultSet(rs);
-            } else {
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return extractLoanFromResultSet(rs);
+                }
                 throw new RecordNotFoundException("Prestito con ID " + loanId + " non trovato");
             }
 
@@ -60,340 +74,245 @@ public class DatabaseLoanDAO implements LoanDAO {
 
     @Override
     public List<Loan> getLoansByUser(String userEmail) throws DAOException {
-        List<Loan> loans = new ArrayList<>();
-        String sql = "SELECT * FROM loans WHERE user_email = ? ORDER BY reserved_date DESC";
-        
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, userEmail);
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                loans.add(extractLoanFromResultSet(rs));
-            }
-
-            return loans;
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante il recupero dei prestiti per l'utente " + userEmail, e);
-        }
+        String sql = "SELECT " + LOAN_COLUMNS +
+                     " FROM loans WHERE user_email = ? ORDER BY reserved_date DESC";
+        return executeLoanQuery(sql, stmt -> stmt.setString(1, userEmail));
     }
 
     @Override
     public List<Loan> getActiveLoansByUser(String userEmail) throws DAOException {
-        List<Loan> loans = new ArrayList<>();
-        String sql = "SELECT * FROM loans WHERE user_email = ? AND status IN ('LOANED', 'EXPIRED') ORDER BY returning_date ASC";
-        
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        String sql = "SELECT " + LOAN_COLUMNS +
+                     " FROM loans WHERE user_email = ? AND status IN (?, ?) ORDER BY returning_date ASC";
 
+        return executeLoanQuery(sql, stmt -> {
             stmt.setString(1, userEmail);
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                loans.add(extractLoanFromResultSet(rs));
-            }
-
-            return loans;
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante il recupero dei prestiti attivi per l'utente " + userEmail, e);
-        }
+            stmt.setString(2, LoanStatus.LOANED.name());
+            stmt.setString(3, LoanStatus.EXPIRED.name());
+        });
     }
 
     @Override
     public List<Loan> getReservedLoansByUser(String userEmail) throws DAOException {
-        List<Loan> loans = new ArrayList<>();
-        String sql = "SELECT * FROM loans WHERE user_email = ? AND status = 'RESERVED' ORDER BY reserved_date ASC";
-        
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        String sql = "SELECT " + LOAN_COLUMNS +
+                     " FROM loans WHERE user_email = ? AND status = ? ORDER BY reserved_date ASC";
 
+        return executeLoanQuery(sql, stmt -> {
             stmt.setString(1, userEmail);
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                loans.add(extractLoanFromResultSet(rs));
-            }
-
-            return loans;
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante il recupero dei prestiti riservati per l'utente " + userEmail, e);
-        }
+            stmt.setString(2, LoanStatus.RESERVED.name());
+        });
     }
 
     @Override
     public List<Loan> getLoansByBook(int bookId) throws DAOException {
-        List<Loan> loans = new ArrayList<>();
-        String sql = "SELECT * FROM loans WHERE book_id = ? ORDER BY reserved_date DESC";
-        
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, bookId);
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                loans.add(extractLoanFromResultSet(rs));
-            }
-
-            return loans;
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante il recupero dei prestiti per il libro ID " + bookId, e);
-        }
+        String sql = "SELECT " + LOAN_COLUMNS +
+                     " FROM loans WHERE book_id = ? ORDER BY reserved_date DESC";
+        return executeLoanQuery(sql, stmt -> stmt.setInt(1, bookId));
     }
 
     @Override
     public List<Loan> getLoansByStatus(String status) throws DAOException {
-        List<Loan> loans = new ArrayList<>();
-        String sql = "SELECT * FROM loans WHERE status = ? ORDER BY reserved_date DESC";
-        
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, status);
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                loans.add(extractLoanFromResultSet(rs));
-            }
-
-            return loans;
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante il recupero dei prestiti con stato " + status, e);
-        }
+        String sql = "SELECT " + LOAN_COLUMNS +
+                     " FROM loans WHERE status = ? ORDER BY reserved_date DESC";
+        return executeLoanQuery(sql, stmt -> stmt.setString(1, status));
     }
 
     @Override
     public List<Loan> getAllReservedLoans() throws DAOException {
-        return getLoansByStatus("RESERVED");
+        return getLoansByStatus(LoanStatus.RESERVED.name());
     }
 
     @Override
     public List<Loan> getAllActiveLoans() throws DAOException {
-        List<Loan> loans = new ArrayList<>();
-        String sql = "SELECT * FROM loans WHERE status IN ('LOANED', 'EXPIRED') ORDER BY returning_date ASC";
-        
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+        String sql = "SELECT " + LOAN_COLUMNS +
+                     " FROM loans WHERE status IN (?, ?) ORDER BY returning_date ASC";
 
-            while (rs.next()) {
-                loans.add(extractLoanFromResultSet(rs));
-            }
-
-            return loans;
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante il recupero di tutti i prestiti attivi", e);
-        }
+        return executeLoanQuery(sql, stmt -> {
+            stmt.setString(1, LoanStatus.LOANED.name());
+            stmt.setString(2, LoanStatus.EXPIRED.name());
+        });
     }
 
     @Override
     public List<Loan> getAllReturnedLoans() throws DAOException {
-        return getLoansByStatus("RETURNED");
+        return getLoansByStatus(LoanStatus.RETURNED.name());
     }
 
     @Override
-    public void acceptLoan(int loanId) throws DAOException, RecordNotFoundException {
-        String updateLoanSql = "UPDATE loans SET status = 'LOANED', loaned_date = ?, returning_date = ? WHERE id = ?";
-        String updateBookSql = "UPDATE books SET stock = stock - 1 WHERE id = (SELECT book_id FROM loans WHERE id = ?)";
-        
-        try (Connection conn = dbConnection.getConnection()) {
-            conn.setAutoCommit(false);
+    public List<Loan> getExpiredLoans() throws DAOException {
+        return getLoansByStatus(LoanStatus.EXPIRED.name());
+    }
+
+    /* =======================
+       UPDATE (TRANSACTIONAL)
+       ======================= */
+
+    @Override
+    public void acceptLoan(int loanId) throws DAOException {
+        executeTransactionalOperation(conn -> {
+
+            String updateLoanSql = """
+                UPDATE loans
+                SET status = ?, loaned_date = ?, returning_date = ?
+                WHERE id = ?
+            """;
+
+            String updateBookSql = """
+                UPDATE books
+                SET stock = stock - 1
+                WHERE id = (SELECT book_id FROM loans WHERE id = ?)
+            """;
+
+            LocalDate today = LocalDate.now();
+            LocalDate returningDate = today.plusDays(Constants.LOANING_DAYS);
 
             try (PreparedStatement loanStmt = conn.prepareStatement(updateLoanSql);
                  PreparedStatement bookStmt = conn.prepareStatement(updateBookSql)) {
 
-                // Aggiorna il prestito
-                LocalDate today = LocalDate.now();
-                LocalDate returningDate = today.plusDays(Constants.LOANING_DAYS);
-                
-                loanStmt.setDate(1, Date.valueOf(today));
-                loanStmt.setDate(2, Date.valueOf(returningDate));
-                loanStmt.setInt(3, loanId);
-                
-                int rowsAffected = loanStmt.executeUpdate();
-                if (rowsAffected == 0) {
-                    conn.rollback();
-                    throw new RecordNotFoundException("Nessun prestito trovato con ID: " + loanId);
+                loanStmt.setString(1, LoanStatus.LOANED.name());
+                loanStmt.setDate(2, Date.valueOf(today));
+                loanStmt.setDate(3, Date.valueOf(returningDate));
+                loanStmt.setInt(4, loanId);
+
+                if (loanStmt.executeUpdate() == 0) {
+                    throw new RecordNotFoundException("Prestito non trovato: " + loanId);
                 }
 
-                // Aggiorna lo stock del libro
                 bookStmt.setInt(1, loanId);
                 bookStmt.executeUpdate();
-
-                conn.commit();
-
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);
             }
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante l'accettazione del prestito ID " + loanId, e);
-        }
+        });
     }
 
     @Override
-    public void returnLoan(int loanId) throws DAOException, RecordNotFoundException {
-        String updateLoanSql = "UPDATE loans SET status = 'RETURNED' WHERE id = ?";
-        String updateBookSql = "UPDATE books SET stock = stock + 1 WHERE id = (SELECT book_id FROM loans WHERE id = ?)";
+    public void returnLoan(int loanId) throws DAOException {
+        executeTransactionalOperation(conn -> {
 
-        try (Connection conn = dbConnection.getConnection()) {
-            conn.setAutoCommit(false);
+            String updateLoanSql = "UPDATE loans SET status = ? WHERE id = ?";
+            String updateBookSql = """
+                UPDATE books
+                SET stock = stock + 1
+                WHERE id = (SELECT book_id FROM loans WHERE id = ?)
+            """;
 
             try (PreparedStatement loanStmt = conn.prepareStatement(updateLoanSql);
                  PreparedStatement bookStmt = conn.prepareStatement(updateBookSql)) {
 
-                loanStmt.setInt(1, loanId);
-                int rowsAffected = loanStmt.executeUpdate();
-                
-                if (rowsAffected == 0) {
-                    conn.rollback();
-                    throw new RecordNotFoundException("Nessun prestito trovato con ID: " + loanId);
+                loanStmt.setString(1, LoanStatus.RETURNED.name());
+                loanStmt.setInt(2, loanId);
+
+                if (loanStmt.executeUpdate() == 0) {
+                    throw new RecordNotFoundException("Prestito non trovato: " + loanId);
                 }
 
                 bookStmt.setInt(1, loanId);
                 bookStmt.executeUpdate();
-
-                conn.commit();
-
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);
             }
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante la restituzione del prestito ID " + loanId, e);
-        }
+        });
     }
 
     @Override
-    public void updateLoanStatus(int loanId, String status) throws DAOException, RecordNotFoundException {
+    public void updateLoanStatus(int loanId, String status) throws DAOException {
         String sql = "UPDATE loans SET status = ? WHERE id = ?";
-        
+
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, status);
             stmt.setInt(2, loanId);
-            
-            int rowsAffected = stmt.executeUpdate();
-            if (rowsAffected == 0) {
-                throw new RecordNotFoundException("Nessun prestito trovato con ID: " + loanId);
+
+            if (stmt.executeUpdate() == 0) {
+                throw new RecordNotFoundException("Prestito non trovato: " + loanId);
             }
 
         } catch (SQLException e) {
-            throw new DAOException("Errore durante l'aggiornamento dello stato del prestito ID " + loanId, e);
+            throw new DAOException("Errore aggiornamento stato prestito", e);
         }
     }
 
     @Override
-    public void deleteLoan(int loanId) throws DAOException, RecordNotFoundException {
+    public void deleteLoan(int loanId) throws DAOException {
         String sql = "DELETE FROM loans WHERE id = ?";
-        
+
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, loanId);
-            
-            int rowsAffected = stmt.executeUpdate();
-            if (rowsAffected == 0) {
-                throw new RecordNotFoundException("Nessun prestito trovato con ID: " + loanId);
+
+            if (stmt.executeUpdate() == 0) {
+                throw new RecordNotFoundException("Prestito non trovato: " + loanId);
             }
 
         } catch (SQLException e) {
-            throw new DAOException("Errore durante l'eliminazione del prestito ID " + loanId, e);
+            throw new DAOException("Errore eliminazione prestito", e);
         }
     }
 
+    /* =======================
+       SEARCH
+       ======================= */
+
     @Override
     public List<Loan> searchLoansByUser(String searchText) throws DAOException {
-        List<Loan> loans = new ArrayList<>();
         String sql = """
-            SELECT l.* 
+            SELECT """ + LOAN_COLUMNS + """
             FROM loans l
             JOIN users u ON l.user_email = u.email
-            WHERE LOWER(u.email) LIKE ? OR LOWER(u.first_name) LIKE ? OR LOWER(u.last_name) LIKE ?
+            WHERE LOWER(u.email) LIKE ?
+               OR LOWER(u.first_name) LIKE ?
+               OR LOWER(u.last_name) LIKE ?
             ORDER BY l.reserved_date DESC
         """;
 
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            String pattern = "%" + (searchText == null ? "" : searchText.toLowerCase()) + "%";
+        String pattern = "%" + safeLower(searchText) + "%";
+        return executeLoanQuery(sql, stmt -> {
             stmt.setString(1, pattern);
             stmt.setString(2, pattern);
             stmt.setString(3, pattern);
-
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                loans.add(extractLoanFromResultSet(rs));
-            }
-
-            return loans;
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante la ricerca dei prestiti per utente", e);
-        }
+        });
     }
 
     @Override
     public List<Loan> searchLoansByBook(String searchText) throws DAOException {
-        List<Loan> loans = new ArrayList<>();
         String sql = """
-            SELECT l.* 
+            SELECT """ + LOAN_COLUMNS + """
             FROM loans l
             JOIN books b ON l.book_id = b.id
-            WHERE LOWER(b.title) LIKE ? OR LOWER(b.author) LIKE ?
+            WHERE LOWER(b.title) LIKE ?
+               OR LOWER(b.author) LIKE ?
             ORDER BY l.reserved_date DESC
+        """;
+
+        String pattern = "%" + safeLower(searchText) + "%";
+        return executeLoanQuery(sql, stmt -> {
+            stmt.setString(1, pattern);
+            stmt.setString(2, pattern);
+        });
+    }
+
+    /* =======================
+       UTILITY
+       ======================= */
+
+    @Override
+    public int countActiveLoansByUser(String userEmail) throws DAOException {
+        String sql = """
+            SELECT COUNT(*) FROM loans
+            WHERE user_email = ? AND status IN (?, ?)
         """;
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            String pattern = "%" + (searchText == null ? "" : searchText.toLowerCase()) + "%";
-            stmt.setString(1, pattern);
-            stmt.setString(2, pattern);
-
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                loans.add(extractLoanFromResultSet(rs));
-            }
-
-            return loans;
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante la ricerca dei prestiti per libro", e);
-        }
-    }
-
-    @Override
-    public int countActiveLoansByUser(String userEmail) throws DAOException {
-        String sql = "SELECT COUNT(*) as count FROM loans WHERE user_email = ? AND status IN ('LOANED', 'EXPIRED')";
-        
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setString(1, userEmail);
-            ResultSet rs = stmt.executeQuery();
-            
-            if (rs.next()) {
-                return rs.getInt("count");
+            stmt.setString(2, LoanStatus.LOANED.name());
+            stmt.setString(3, LoanStatus.EXPIRED.name());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
             }
-            return 0;
 
         } catch (SQLException e) {
-            throw new DAOException("Errore durante il conteggio dei prestiti attivi per " + userEmail, e);
+            throw new DAOException("Errore conteggio prestiti attivi", e);
         }
     }
 
@@ -402,24 +321,75 @@ public class DatabaseLoanDAO implements LoanDAO {
         return countActiveLoansByUser(userEmail) > 0;
     }
 
-    @Override
-    public List<Loan> getExpiredLoans() throws DAOException {
-        return getLoansByStatus("EXPIRED");
+    private List<Loan> executeLoanQuery(String sql, StatementPreparer preparer)
+            throws DAOException {
+
+        List<Loan> loans = new ArrayList<>();
+
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            preparer.prepare(stmt);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    loans.add(extractLoanFromResultSet(rs));
+                }
+            }
+
+            return loans;
+
+        } catch (SQLException e) {
+            throw new DAOException("Errore esecuzione query prestiti", e);
+        }
+    }
+
+    private void executeTransactionalOperation(TransactionalOperation operation)
+            throws DAOException {
+
+        try (Connection conn = dbConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                operation.execute(conn);
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new DAOException("Errore operazione transazionale", e);
+        }
     }
 
     private Loan extractLoanFromResultSet(ResultSet rs) throws SQLException {
-        int loanId = rs.getInt("id");
-        String userEmail = rs.getString("user_email");
-        int bookId = rs.getInt("book_id");
-        LoanStatus status = LoanStatus.valueOf(rs.getString("status"));
-        
-        LocalDate reservedDate = rs.getDate("reserved_date") != null ? 
-                                rs.getDate("reserved_date").toLocalDate() : null;
-        LocalDate loanedDate = rs.getDate("loaned_date") != null ? 
-                              rs.getDate("loaned_date").toLocalDate() : null;
-        LocalDate returningDate = rs.getDate("returning_date") != null ? 
-                                 rs.getDate("returning_date").toLocalDate() : null;
+        return new Loan(
+                rs.getInt("id"),
+                rs.getString("user_email"),
+                rs.getInt("book_id"),
+                toLocalDate(rs.getDate("reserved_date")),
+                toLocalDate(rs.getDate("loaned_date")),
+                toLocalDate(rs.getDate("returning_date")),
+                LoanStatus.valueOf(rs.getString("status"))
+        );
+    }
 
-        return new Loan(loanId, userEmail, bookId, reservedDate, loanedDate, returningDate, status);
+    private LocalDate toLocalDate(Date date) {
+        return date != null ? date.toLocalDate() : null;
+    }
+
+    private String safeLower(String text) {
+        return text == null ? "" : text.toLowerCase();
+    }
+
+    @FunctionalInterface
+    private interface StatementPreparer {
+        void prepare(PreparedStatement stmt) throws SQLException;
+    }
+
+    @FunctionalInterface
+    private interface TransactionalOperation {
+        void execute(Connection conn) throws SQLException, DAOException;
     }
 }
