@@ -248,9 +248,8 @@ public class DatabaseLoanDAO implements LoanDAO {
 
     @Override
     public List<Loan> searchLoansByUser(String searchText) throws DAOException {
-        String sql = BASE_SELECT + """
-        	 l
-            JOIN users u ON l.user_email = u.email
+        String sql = BASE_SELECT + """ 
+            l JOIN users u ON l.user_email = u.email
             WHERE LOWER(u.email) LIKE ?
                OR LOWER(u.first_name) LIKE ?
                OR LOWER(u.last_name) LIKE ?
@@ -267,9 +266,8 @@ public class DatabaseLoanDAO implements LoanDAO {
 
     @Override
     public List<Loan> searchLoansByBook(String searchText) throws DAOException {
-        String sql = BASE_SELECT + """
-             l
-            JOIN books b ON l.book_id = b.id
+        String sql = BASE_SELECT + """ 
+            l JOIN books b ON l.book_id = b.id
             WHERE LOWER(b.title) LIKE ?
                OR LOWER(b.author) LIKE ?
             ORDER BY l.reserved_date DESC
