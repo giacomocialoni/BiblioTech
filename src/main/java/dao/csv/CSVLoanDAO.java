@@ -244,7 +244,11 @@ public class CSVLoanDAO implements LoanDAO {
         }
 
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // header
+        	String header = reader.readLine();
+        	if (header == null) {
+        	    LOGGER.warn("File CSV prestiti vuoto");
+        	    return loans;
+        	}
 
             String line;
             while ((line = reader.readLine()) != null) {
