@@ -2,7 +2,6 @@ package dao.csv;
 
 import dao.LoanDAO;
 import exception.DAOException;
-import exception.RecordNotFoundException;
 import model.Loan;
 import utils.Constants;
 import utils.LoanStatus;
@@ -17,360 +16,347 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CSVLoanDAO implements LoanDAO {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(CSVLoanDAO.class);
+
     private static final String FILE_PATH = "src/main/resources/data/loans.csv";
-    
+    private static final String CSV_HEADER =
+            "id,user_email,book_id,status,reserved_date,loaned_date,returning_date";
+
+    /* =======================
+       CREATE
+       ======================= */
+
     @Override
     public void addLoan(String userEmail, int bookId) throws DAOException {
+        Path path = Paths.get(FILE_PATH);
+
         try {
-            Path path = Paths.get(FILE_PATH);
-            boolean fileExists = Files.exists(path);
-            
-            try (BufferedWriter writer = Files.newBufferedWriter(path,
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.APPEND)) {
-                
-                if (!fileExists || Files.size(path) == 0) {
-                    writer.write("id,user_email,book_id,status,reserved_date,loaned_date,returning_date");
+            Files.createDirectories(path.getParent());
+
+            boolean writeHeader = !Files.exists(path) || Files.size(path) == 0;
+
+            try (BufferedWriter writer = Files.newBufferedWriter(
+                    path, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+
+                if (writeHeader) {
+                    writer.write(CSV_HEADER);
                     writer.newLine();
                 }
-                
+
                 int nextId = getNextId();
-                String line = String.join(",",
-                    String.valueOf(nextId),
-                    userEmail,
-                    String.valueOf(bookId),
-                    "RESERVED",
-                    LocalDate.now().toString(),
-                    "",
-                    ""
-                );
-                
-                writer.write(line);
+                writer.write(formatLoan(new Loan(
+                        nextId,
+                        userEmail,
+                        bookId,
+                        LocalDate.now(),
+                        null,
+                        null,
+                        LoanStatus.RESERVED
+                )));
                 writer.newLine();
-                
-                LOGGER.info("Prestito aggiunto: ID {} per utente {} libro {}", nextId, userEmail, bookId);
+
+                LOGGER.info("Prestito CSV aggiunto: ID {}", nextId);
             }
-            
+
         } catch (IOException e) {
-            LOGGER.error("Errore durante l'aggiunta del prestito per utente {} libro {}", userEmail, bookId, e);
-            throw new DAOException("Errore durante l'aggiunta del prestito", e);
+            LOGGER.error("Errore aggiunta prestito CSV", e);
+            throw new DAOException("Errore durante l'aggiunta del prestito CSV", e);
         }
     }
-    
+
+    /* =======================
+       UPDATE
+       ======================= */
+
     @Override
-    public void updateLoanStatus(int loanId, String status) throws DAOException, RecordNotFoundException {
-        updateLoan(loanId, loan -> {
-            loan.setStatus(LoanStatus.valueOf(status));
-            if ("LOANED".equals(status)) {
+    public void updateLoanStatus(int loanId, String status) throws DAOException {
+        LoanStatus newStatus = LoanStatus.valueOf(status);
+
+        updateLoanInternal(loanId, loan -> {
+            loan.setStatus(newStatus);
+
+            if (newStatus == LoanStatus.LOANED) {
                 loan.setLoanedDate(LocalDate.now());
                 loan.setReturningDate(LocalDate.now().plusDays(Constants.LOANING_DAYS));
             }
         });
-        LOGGER.info("Stato prestito aggiornato: ID {} -> {}", loanId, status);
+
+        LOGGER.info("Stato prestito aggiornato CSV: ID {} -> {}", loanId, status);
     }
-    
+
     @Override
-    public void deleteLoan(int loanId) throws DAOException, RecordNotFoundException {
+    public void acceptLoan(int loanId) throws DAOException {
+        updateLoanStatus(loanId, LoanStatus.LOANED.name());
+    }
+
+    @Override
+    public void returnLoan(int loanId) throws DAOException {
+        updateLoanInternal(loanId, loan -> loan.setStatus(LoanStatus.RETURNED));
+        LOGGER.info("Prestito restituito CSV: ID {}", loanId);
+    }
+
+    @Override
+    public void deleteLoan(int loanId) throws DAOException {
         List<Loan> loans = loadAllLoans();
+
         boolean removed = loans.removeIf(l -> l.getId() == loanId);
-        
         if (!removed) {
-            LOGGER.warn("Tentativo di eliminazione prestito non trovato: ID {}", loanId);
-            throw new RecordNotFoundException("Prestito con ID " + loanId + " non trovato");
+            throw new DAOException("Prestito CSV non trovato: ID " + loanId);
         }
-        
+
         saveAllLoans(loans);
-        LOGGER.info("Prestito eliminato: ID {}", loanId);
+        LOGGER.info("Prestito eliminato CSV: ID {}", loanId);
     }
-    
+
+    /* =======================
+       READ
+       ======================= */
+
     @Override
-    public Loan getLoanById(int loanId) throws DAOException, RecordNotFoundException {
+    public Loan getLoanById(int loanId) throws DAOException {
         return loadAllLoans().stream()
                 .filter(l -> l.getId() == loanId)
                 .findFirst()
-                .orElseThrow(() -> {
-                    LOGGER.warn("Prestito non trovato: ID {}", loanId);
-                    return new RecordNotFoundException("Prestito con ID " + loanId + " non trovato");
-                });
+                .orElseThrow(() ->
+                        new DAOException("Prestito CSV non trovato: ID " + loanId));
     }
-    
+
     @Override
     public List<Loan> getLoansByUser(String userEmail) throws DAOException {
-        List<Loan> loans = loadAllLoans().stream()
+        return loadAllLoans().stream()
                 .filter(l -> l.getUserEmail().equals(userEmail))
                 .toList();
-        LOGGER.debug("Recuperati {} prestiti per utente {}", loans.size(), userEmail);
-        return loans;
     }
-    
+
     @Override
     public List<Loan> getActiveLoansByUser(String userEmail) throws DAOException {
-        List<Loan> loans = loadAllLoans().stream()
+        return loadAllLoans().stream()
                 .filter(l -> l.getUserEmail().equals(userEmail))
-                .filter(l -> l.getStatus() == LoanStatus.LOANED || l.getStatus() == LoanStatus.EXPIRED)
+                .filter(this::isActive)
                 .toList();
-        LOGGER.debug("Recuperati {} prestiti attivi per utente {}", loans.size(), userEmail);
-        return loans;
     }
-    
+
     @Override
     public List<Loan> getReservedLoansByUser(String userEmail) throws DAOException {
-        List<Loan> loans = loadAllLoans().stream()
+        return loadAllLoans().stream()
                 .filter(l -> l.getUserEmail().equals(userEmail))
                 .filter(l -> l.getStatus() == LoanStatus.RESERVED)
                 .toList();
-        LOGGER.debug("Recuperati {} prestiti riservati per utente {}", loans.size(), userEmail);
-        return loans;
     }
-    
+
     @Override
     public List<Loan> getLoansByBook(int bookId) throws DAOException {
-        List<Loan> loans = loadAllLoans().stream()
+        return loadAllLoans().stream()
                 .filter(l -> l.getBookId() == bookId)
                 .toList();
-        LOGGER.debug("Recuperati {} prestiti per libro {}", loans.size(), bookId);
-        return loans;
     }
-    
+
     @Override
     public List<Loan> getLoansByStatus(String status) throws DAOException {
         LoanStatus loanStatus = LoanStatus.valueOf(status);
-        List<Loan> loans = loadAllLoans().stream()
+        return loadAllLoans().stream()
                 .filter(l -> l.getStatus() == loanStatus)
                 .toList();
-        LOGGER.debug("Recuperati {} prestiti con stato {}", loans.size(), status);
-        return loans;
     }
-    
+
     @Override
     public List<Loan> getAllReservedLoans() throws DAOException {
-        List<Loan> loans = getLoansByStatus("RESERVED");
-        LOGGER.debug("Recuperati tutti i {} prestiti riservati", loans.size());
-        return loans;
+        return getLoansByStatus(LoanStatus.RESERVED.name());
     }
-    
+
     @Override
     public List<Loan> getAllActiveLoans() throws DAOException {
-        List<Loan> loans = loadAllLoans().stream()
-                .filter(l -> l.getStatus() == LoanStatus.LOANED || l.getStatus() == LoanStatus.EXPIRED)
+        return loadAllLoans().stream()
+                .filter(this::isActive)
                 .toList();
-        LOGGER.debug("Recuperati tutti i {} prestiti attivi", loans.size());
-        return loans;
     }
-    
+
     @Override
     public List<Loan> getAllReturnedLoans() throws DAOException {
-        List<Loan> loans = getLoansByStatus("RETURNED");
-        LOGGER.debug("Recuperati tutti i {} prestiti restituiti", loans.size());
-        return loans;
+        return getLoansByStatus(LoanStatus.RETURNED.name());
     }
-    
-    @Override
-    public void acceptLoan(int loanId) throws DAOException, RecordNotFoundException {
-        updateLoan(loanId, loan -> {
-            loan.setStatus(LoanStatus.LOANED);
-            loan.setLoanedDate(LocalDate.now());
-            loan.setReturningDate(LocalDate.now().plusDays(Constants.LOANING_DAYS));
-        });
-        LOGGER.info("Prestito accettato: ID {}", loanId);
-    }
-    
-    @Override
-    public void returnLoan(int loanId) throws DAOException, RecordNotFoundException {
-        updateLoan(loanId, loan -> {
-            loan.setStatus(LoanStatus.RETURNED);
-        });
-        LOGGER.info("Prestito restituito: ID {}", loanId);
-    }
-    
-    @Override
-    public List<Loan> searchLoansByUser(String searchText) throws DAOException {
-        String lowerSearch = searchText.toLowerCase();
-        List<Loan> loans = loadAllLoans().stream()
-                .filter(l -> l.getUserEmail().toLowerCase().contains(lowerSearch))
-                .toList();
-        LOGGER.debug("Ricerca prestiti per utente '{}': trovati {} risultati", searchText, loans.size());
-        return loans;
-    }
-    
-    @Override
-    public List<Loan> searchLoansByBook(String searchText) throws DAOException {
-        // In CSV senza join con books, non possiamo cercare per titolo/autore
-        LOGGER.warn("Ricerca prestiti per libro non supportata in modalità CSV");
-        return new ArrayList<>();
-    }
-    
-    @Override
-    public int countActiveLoansByUser(String userEmail) throws DAOException {
-        int count = (int) loadAllLoans().stream()
-                .filter(l -> l.getUserEmail().equals(userEmail))
-                .filter(l -> l.getStatus() == LoanStatus.LOANED || l.getStatus() == LoanStatus.EXPIRED)
-                .count();
-        LOGGER.debug("Contati {} prestiti attivi per utente {}", count, userEmail);
-        return count;
-    }
-    
-    @Override
-    public boolean hasUserActiveLoans(String userEmail) throws DAOException {
-        boolean hasLoans = countActiveLoansByUser(userEmail) > 0;
-        LOGGER.debug("Utente {} ha prestiti attivi: {}", userEmail, hasLoans);
-        return hasLoans;
-    }
-    
+
     @Override
     public List<Loan> getExpiredLoans() throws DAOException {
+        List<Loan> loans = loadAllLoans();
+        List<Loan> expired = new ArrayList<>();
+
         LocalDate today = LocalDate.now();
-        List<Loan> expiredLoans = loadAllLoans().stream()
-                .filter(l -> l.getStatus() == LoanStatus.LOANED)
-                .filter(l -> l.getReturningDate() != null && l.getReturningDate().isBefore(today))
-                .peek(l -> l.setStatus(LoanStatus.EXPIRED))
-                .toList();
-        
-        if (!expiredLoans.isEmpty()) {
-            LOGGER.info("Trovati {} prestiti scaduti", expiredLoans.size());
-            // Salva i cambiamenti di stato
-            saveAllLoans(loadAllLoans());
+
+        for (Loan loan : loans) {
+            if (loan.getStatus() == LoanStatus.LOANED
+                    && loan.getReturningDate() != null
+                    && loan.getReturningDate().isBefore(today)) {
+
+                loan.setStatus(LoanStatus.EXPIRED);
+                expired.add(loan);
+            }
         }
-        
-        return expiredLoans;
+
+        if (!expired.isEmpty()) {
+            saveAllLoans(loans);
+            LOGGER.info("Aggiornati {} prestiti scaduti CSV", expired.size());
+        }
+
+        return expired;
     }
-    
+
+    /* =======================
+       SEARCH & UTILITY
+       ======================= */
+
+    @Override
+    public List<Loan> searchLoansByUser(String searchText) throws DAOException {
+        String pattern = safeLower(searchText);
+
+        return loadAllLoans().stream()
+                .filter(l -> safeLower(l.getUserEmail()).contains(pattern))
+                .toList();
+    }
+
+    @Override
+    public List<Loan> searchLoansByBook(String searchText) {
+        LOGGER.warn("Ricerca per libro non supportata in CSV");
+        return new ArrayList<>();
+    }
+
+    @Override
+    public int countActiveLoansByUser(String userEmail) throws DAOException {
+        return (int) getActiveLoansByUser(userEmail).size();
+    }
+
+    @Override
+    public boolean hasUserActiveLoans(String userEmail) throws DAOException {
+        return countActiveLoansByUser(userEmail) > 0;
+    }
+
+    /* =======================
+       FILE HANDLING
+       ======================= */
+
     private List<Loan> loadAllLoans() throws DAOException {
-    	List<Loan> loans = new ArrayList<>();
+        List<Loan> loans = new ArrayList<>();
         Path path = Paths.get(FILE_PATH);
-        
+
         if (!Files.exists(path)) {
-            LOGGER.debug("File prestiti non trovato, restituita lista vuota");
             return loans;
         }
-        
+
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            String header = reader.readLine(); // Leggi e memorizza
-            if (header == null) {
-                LOGGER.warn("File prestiti vuoto");
-                return loans;
-            }
-            LOGGER.debug("Header file prestiti: {}", header);
-            
+            reader.readLine(); // header
+
             String line;
-            int lineNumber = 1;
-            int errors = 0;
-            
-            while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
-                try {
-                    Loan loan = parseLoan(line);
-                    if (loan != null) {
-                        loans.add(loan);
-                    } else {
-                        errors++;
-                    }
-                } catch (Exception e) {
-                    LOGGER.warn("Errore nel parsing del prestito riga {}: {}", lineNumber, line, e);
-                    errors++;
+            while ((line = reader.readLine()) != null) {
+                Loan loan = parseLoanLine(line);
+                if (loan != null) {
+                    loans.add(loan);
                 }
-                lineNumber++;
             }
-            
-            if (errors > 0) {
-                LOGGER.warn("Caricamento prestiti completato con {} errori", errors);
-            }
-            
+            return loans;
+
         } catch (IOException e) {
-            LOGGER.error("Errore durante la lettura dei prestiti", e);
-            throw new DAOException("Errore durante la lettura dei prestiti", e);
+            LOGGER.error("Errore lettura CSV prestiti", e);
+            throw new DAOException("Errore lettura CSV prestiti", e);
         }
-        
-        LOGGER.debug("Caricati {} prestiti", loans.size());
-        return loans;
     }
-    
+
     private void saveAllLoans(List<Loan> loans) throws DAOException {
         Path path = Paths.get(FILE_PATH);
-        
+
         try {
             Files.createDirectories(path.getParent());
-            
+
             try (BufferedWriter writer = Files.newBufferedWriter(path)) {
-                writer.write("id,user_email,book_id,status,reserved_date,loaned_date,returning_date");
+                writer.write(CSV_HEADER);
                 writer.newLine();
-                
+
                 for (Loan loan : loans) {
                     writer.write(formatLoan(loan));
                     writer.newLine();
                 }
             }
-            
+
         } catch (IOException e) {
-            LOGGER.error("Errore durante il salvataggio dei prestiti", e);
-            throw new DAOException("Errore durante il salvataggio dei prestiti", e);
+            LOGGER.error("Errore scrittura CSV prestiti", e);
+            throw new DAOException("Errore scrittura CSV prestiti", e);
         }
     }
-    
-    private Loan parseLoan(String line) {
-        String[] fields = line.split(",", -1);
-        
+
+    /* =======================
+       HELPERS
+       ======================= */
+
+    private Loan parseLoanLine(String line) {
         try {
-            int id = Integer.parseInt(fields[0]);
-            String userEmail = fields[1];
-            int bookId = Integer.parseInt(fields[2]);
-            LoanStatus status = LoanStatus.valueOf(fields[3]);
-            
-            LocalDate reservedDate = fields[4].isEmpty() ? null : LocalDate.parse(fields[4]);
-            LocalDate loanedDate = fields[5].isEmpty() ? null : LocalDate.parse(fields[5]);
-            LocalDate returningDate = fields[6].isEmpty() ? null : LocalDate.parse(fields[6]);
-            
-            return new Loan(id, userEmail, bookId, reservedDate, loanedDate, returningDate, status);
-            
+            String[] f = line.split(",", -1);
+
+            return new Loan(
+                    Integer.parseInt(f[0]),
+                    f[1],
+                    Integer.parseInt(f[2]),
+                    parseDate(f[4]),
+                    parseDate(f[5]),
+                    parseDate(f[6]),
+                    LoanStatus.valueOf(f[3])
+            );
+
         } catch (Exception e) {
-            LOGGER.warn("Errore nel parsing della riga prestito: {}", line, e);
+            LOGGER.warn("Riga CSV prestito non valida: {}", line);
             return null;
         }
     }
-    
+
     private String formatLoan(Loan loan) {
         return String.join(",",
-            String.valueOf(loan.getId()),
-            loan.getUserEmail(),
-            String.valueOf(loan.getBookId()),
-            loan.getStatus().name(),
-            loan.getReservedDate() != null ? loan.getReservedDate().toString() : "",
-            loan.getLoanedDate() != null ? loan.getLoanedDate().toString() : "",
-            loan.getReturningDate() != null ? loan.getReturningDate().toString() : ""
+                String.valueOf(loan.getId()),
+                loan.getUserEmail(),
+                String.valueOf(loan.getBookId()),
+                loan.getStatus().name(),
+                formatDate(loan.getReservedDate()),
+                formatDate(loan.getLoanedDate()),
+                formatDate(loan.getReturningDate())
         );
     }
-    
+
     private int getNextId() throws DAOException {
-        List<Loan> loans = loadAllLoans();
-        int nextId = loans.stream()
+        return loadAllLoans().stream()
                 .mapToInt(Loan::getId)
                 .max()
                 .orElse(0) + 1;
-        LOGGER.debug("Nuovo ID prestito generato: {}", nextId);
-        return nextId;
     }
-    
-    private void updateLoan(int loanId, LoanUpdater updater) throws DAOException, RecordNotFoundException {
+
+    private void updateLoanInternal(int loanId, LoanUpdater updater) throws DAOException {
         List<Loan> loans = loadAllLoans();
-        boolean found = false;
-        
+
         for (Loan loan : loans) {
             if (loan.getId() == loanId) {
                 updater.update(loan);
-                found = true;
-                break;
+                saveAllLoans(loans);
+                return;
             }
         }
-        
-        if (!found) {
-            LOGGER.warn("Prestito non trovato per aggiornamento: ID {}", loanId);
-            throw new RecordNotFoundException("Prestito con ID " + loanId + " non trovato");
-        }
-        
-        saveAllLoans(loans);
+
+        throw new DAOException("Prestito CSV non trovato: ID " + loanId);
     }
-    
+
+    private boolean isActive(Loan loan) {
+        return loan.getStatus() == LoanStatus.LOANED
+                || loan.getStatus() == LoanStatus.EXPIRED;
+    }
+
+    private LocalDate parseDate(String value) {
+        return value == null || value.isEmpty() ? null : LocalDate.parse(value);
+    }
+
+    private String formatDate(LocalDate date) {
+        return date == null ? "" : date.toString();
+    }
+
+    private String safeLower(String s) {
+        return s == null ? "" : s.toLowerCase();
+    }
+
     @FunctionalInterface
     private interface LoanUpdater {
         void update(Loan loan);
