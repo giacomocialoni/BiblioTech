@@ -1,7 +1,7 @@
 package exception;
 
 @SuppressWarnings("serial")
-public class DuplicateBookException extends Exception {
+public class DuplicateBookException extends DAOException {
     
     private final String isbn;
     private final String title;

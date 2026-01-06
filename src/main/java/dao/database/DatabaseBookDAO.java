@@ -12,8 +12,14 @@ import java.util.List;
 
 public class DatabaseBookDAO implements BookDAO {
 
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(DatabaseBookDAO.class);
+    
     private final DBConnection dbConnection;
     private static final String TITLE = "title";
+    private static final String[] BOOK_COLUMNS = {
+        "id", "title", "author", "category", "year", "publisher", 
+        "pages", "isbn", "stock", "plot", "image_path", "price"
+    };
 
     public DatabaseBookDAO(DBConnection dbConnection) {
         this.dbConnection = dbConnection;
@@ -22,7 +28,7 @@ public class DatabaseBookDAO implements BookDAO {
     @Override
     public List<Book> getAllBooks() throws DAOException {
         List<Book> books = new ArrayList<>();
-        String sql = "SELECT * FROM books ORDER BY title";
+        String sql = "SELECT " + String.join(", ", BOOK_COLUMNS) + " FROM books ORDER BY title";
 
         try (Connection conn = dbConnection.getConnection();
              Statement stmt = conn.createStatement();
@@ -34,13 +40,14 @@ public class DatabaseBookDAO implements BookDAO {
             return books;
 
         } catch (SQLException e) {
-            throw new DAOException("Errore durante il recupero di tutti i libri.", e);
+            LOGGER.error("Errore durante il recupero di tutti i libri", e);
+            throw new DAOException("Errore durante il recupero di tutti i libri", e);
         }
     }
 
     @Override
-    public Book getBookById(int id) throws DAOException, RecordNotFoundException {
-        String sql = "SELECT * FROM books WHERE id = ?";
+    public Book getBookById(int id) throws DAOException {
+        String sql = "SELECT " + String.join(", ", BOOK_COLUMNS) + " FROM books WHERE id = ?";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -55,12 +62,13 @@ public class DatabaseBookDAO implements BookDAO {
             }
 
         } catch (SQLException e) {
+            LOGGER.error("Errore durante il caricamento del libro con ID {}", id, e);
             throw new DAOException("Errore durante il caricamento del libro con ID " + id, e);
         }
     }
 
     @Override
-    public void addBook(Book book) throws DAOException, DuplicateBookException {
+    public void addBook(Book book) throws DAOException {
         String sql = "INSERT INTO books (title, author, category, year, publisher, pages, isbn, stock, plot, image_path, price) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
@@ -81,6 +89,7 @@ public class DatabaseBookDAO implements BookDAO {
                 String duplicateType = detectDuplicateType(e, book);
                 throw new DuplicateBookException(book.getIsbn(), book.getTitle(), duplicateType);
             }
+            LOGGER.error("Errore durante l'aggiunta del libro: {}", book.getTitle(), e);
             throw new DAOException("Errore durante l'aggiunta del libro: " + book.getTitle(), e);
         }
     }
@@ -102,7 +111,7 @@ public class DatabaseBookDAO implements BookDAO {
     }
 
     @Override
-    public void updateBook(Book book) throws DAOException, RecordNotFoundException {
+    public void updateBook(Book book) throws DAOException {
         String sql = "UPDATE books SET title=?, author=?, category=?, year=?, publisher=?, pages=?, isbn=?, stock=?, plot=?, image_path=?, price=? WHERE id=?";
         
         try (Connection conn = dbConnection.getConnection();
@@ -117,12 +126,13 @@ public class DatabaseBookDAO implements BookDAO {
             }
 
         } catch (SQLException e) {
+            LOGGER.error("Errore durante l'aggiornamento del libro ID {}", book.getId(), e);
             throw new DAOException("Errore durante l'aggiornamento del libro ID " + book.getId(), e);
         }
     }
 
     @Override
-    public void deleteBook(int id) throws DAOException, RecordNotFoundException {
+    public void deleteBook(int id) throws DAOException {
         String sql = "DELETE FROM books WHERE id=?";
 
         try (Connection conn = dbConnection.getConnection();
@@ -136,6 +146,7 @@ public class DatabaseBookDAO implements BookDAO {
             }
 
         } catch (SQLException e) {
+            LOGGER.error("Errore durante l'eliminazione del libro ID {}", id, e);
             throw new DAOException("Errore durante l'eliminazione del libro ID " + id, e);
         }
     }
@@ -146,10 +157,9 @@ public class DatabaseBookDAO implements BookDAO {
             throws DAOException {
 
         List<Book> books = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM books WHERE 1=1 ");
+        StringBuilder sql = new StringBuilder("SELECT " + String.join(", ", BOOK_COLUMNS) + " FROM books WHERE 1=1 ");
         List<Object> params = new ArrayList<>();
 
-        // Filtro per ricerca
         if (searchText != null && !searchText.trim().isEmpty()) {
             if (TITLE.equalsIgnoreCase(searchMode)) {
                 sql.append("AND LOWER(title) LIKE ? ");
@@ -160,13 +170,11 @@ public class DatabaseBookDAO implements BookDAO {
             }
         }
 
-        // Filtro per categoria
         if (category != null && !category.trim().isEmpty()) {
             sql.append("AND category = ? ");
             params.add(category);
         }
 
-        // Filtro per anno
         if (yearFrom != null && !yearFrom.trim().isEmpty()) {
             sql.append("AND year >= ? ");
             params.add(Integer.parseInt(yearFrom));
@@ -177,7 +185,6 @@ public class DatabaseBookDAO implements BookDAO {
             params.add(Integer.parseInt(yearTo));
         }
 
-        // Filtro per disponibilità
         if (!includeUnavailable) {
             sql.append("AND stock > 0 ");
         }
@@ -199,7 +206,8 @@ public class DatabaseBookDAO implements BookDAO {
             return books;
 
         } catch (SQLException | NumberFormatException e) {
-            throw new DAOException("Errore durante la ricerca dei libri.", e);
+            LOGGER.error("Errore durante la ricerca dei libri", e);
+            throw new DAOException("Errore durante la ricerca dei libri", e);
         }
     }
 
@@ -215,6 +223,7 @@ public class DatabaseBookDAO implements BookDAO {
             stmt.executeUpdate();
 
         } catch (SQLException e) {
+            LOGGER.error("Errore durante l'aggiornamento dello stock per il libro ID {}", bookId, e);
             throw new DAOException("Errore durante l'aggiornamento dello stock per il libro ID " + bookId, e);
         }
     }
@@ -235,6 +244,7 @@ public class DatabaseBookDAO implements BookDAO {
             return false;
 
         } catch (SQLException e) {
+            LOGGER.error("Errore durante il controllo disponibilità del libro ID {}", bookId, e);
             throw new DAOException("Errore durante il controllo disponibilità del libro ID " + bookId, e);
         }
     }
@@ -242,7 +252,7 @@ public class DatabaseBookDAO implements BookDAO {
     @Override
     public List<Book> getBooksByCategory(String category) throws DAOException {
         List<Book> books = new ArrayList<>();
-        String sql = "SELECT * FROM books WHERE category = ? ORDER BY title";
+        String sql = "SELECT " + String.join(", ", BOOK_COLUMNS) + " FROM books WHERE category = ? ORDER BY title";
         
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -257,6 +267,7 @@ public class DatabaseBookDAO implements BookDAO {
             return books;
 
         } catch (SQLException e) {
+            LOGGER.error("Errore durante il recupero dei libri per categoria {}", category, e);
             throw new DAOException("Errore durante il recupero dei libri per categoria " + category, e);
         }
     }
@@ -264,7 +275,7 @@ public class DatabaseBookDAO implements BookDAO {
     @Override
     public List<Book> getBooksByAuthor(String author) throws DAOException {
         List<Book> books = new ArrayList<>();
-        String sql = "SELECT * FROM books WHERE author LIKE ? ORDER BY year DESC, title";
+        String sql = "SELECT " + String.join(", ", BOOK_COLUMNS) + " FROM books WHERE author LIKE ? ORDER BY year DESC, title";
         
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -279,6 +290,7 @@ public class DatabaseBookDAO implements BookDAO {
             return books;
 
         } catch (SQLException e) {
+            LOGGER.error("Errore durante il recupero dei libri per autore {}", author, e);
             throw new DAOException("Errore durante il recupero dei libri per autore " + author, e);
         }
     }
@@ -286,7 +298,7 @@ public class DatabaseBookDAO implements BookDAO {
     @Override
     public List<Book> getAvailableBooks() throws DAOException {
         List<Book> books = new ArrayList<>();
-        String sql = "SELECT * FROM books WHERE stock > 0 ORDER BY title";
+        String sql = "SELECT " + String.join(", ", BOOK_COLUMNS) + " FROM books WHERE stock > 0 ORDER BY title";
         
         try (Connection conn = dbConnection.getConnection();
              Statement stmt = conn.createStatement();
@@ -299,6 +311,7 @@ public class DatabaseBookDAO implements BookDAO {
             return books;
 
         } catch (SQLException e) {
+            LOGGER.error("Errore durante il recupero dei libri disponibili", e);
             throw new DAOException("Errore durante il recupero dei libri disponibili", e);
         }
     }
@@ -333,4 +346,5 @@ public class DatabaseBookDAO implements BookDAO {
         stmt.setString(10, book.getImagePath());
         stmt.setDouble(11, book.getPrice());
     }
+    
 }
