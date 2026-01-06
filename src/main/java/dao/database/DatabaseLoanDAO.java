@@ -14,8 +14,8 @@ import java.util.List;
 
 public class DatabaseLoanDAO implements LoanDAO {
 
-    private static final String LOAN_COLUMNS =
-            "id, user_email, book_id, reserved_date, loaned_date, returning_date, status";
+    private static final String LOAN_COLUMNS = "id, user_email, book_id, reserved_date, loaned_date, returning_date, status";
+    private static final String BASE_SELECT = "SELECT " + LOAN_COLUMNS + " FROM loans ";
 
     private final DBConnection dbConnection;
 
@@ -54,7 +54,7 @@ public class DatabaseLoanDAO implements LoanDAO {
 
     @Override
     public Loan getLoanById(int loanId) throws DAOException {
-        String sql = "SELECT " + LOAN_COLUMNS + " FROM loans WHERE id = ?";
+        String sql = BASE_SELECT + " WHERE id = ?";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -74,8 +74,7 @@ public class DatabaseLoanDAO implements LoanDAO {
 
     @Override
     public List<Loan> getLoansByUser(String userEmail) throws DAOException {
-        String sql = "SELECT " + LOAN_COLUMNS +
-                     " FROM loans WHERE user_email = ? ORDER BY reserved_date DESC";
+        String sql = BASE_SELECT + " WHERE user_email = ? ORDER BY reserved_date DESC";
         return executeLoanQuery(sql, stmt -> stmt.setString(1, userEmail));
     }
 
@@ -93,8 +92,7 @@ public class DatabaseLoanDAO implements LoanDAO {
 
     @Override
     public List<Loan> getReservedLoansByUser(String userEmail) throws DAOException {
-        String sql = "SELECT " + LOAN_COLUMNS +
-                     " FROM loans WHERE user_email = ? AND status = ? ORDER BY reserved_date ASC";
+        String sql = BASE_SELECT + " WHERE user_email = ? AND status = ? ORDER BY reserved_date ASC";
 
         return executeLoanQuery(sql, stmt -> {
             stmt.setString(1, userEmail);
@@ -104,15 +102,13 @@ public class DatabaseLoanDAO implements LoanDAO {
 
     @Override
     public List<Loan> getLoansByBook(int bookId) throws DAOException {
-        String sql = "SELECT " + LOAN_COLUMNS +
-                     " FROM loans WHERE book_id = ? ORDER BY reserved_date DESC";
+        String sql = BASE_SELECT + " WHERE book_id = ? ORDER BY reserved_date DESC";
         return executeLoanQuery(sql, stmt -> stmt.setInt(1, bookId));
     }
 
     @Override
     public List<Loan> getLoansByStatus(String status) throws DAOException {
-        String sql = "SELECT " + LOAN_COLUMNS +
-                     " FROM loans WHERE status = ? ORDER BY reserved_date DESC";
+        String sql = BASE_SELECT + " WHERE status = ? ORDER BY reserved_date DESC";
         return executeLoanQuery(sql, stmt -> stmt.setString(1, status));
     }
 
@@ -123,8 +119,7 @@ public class DatabaseLoanDAO implements LoanDAO {
 
     @Override
     public List<Loan> getAllActiveLoans() throws DAOException {
-        String sql = "SELECT " + LOAN_COLUMNS +
-                     " FROM loans WHERE status IN (?, ?) ORDER BY returning_date ASC";
+        String sql = BASE_SELECT + " WHERE status IN (?, ?) ORDER BY returning_date ASC";
 
         return executeLoanQuery(sql, stmt -> {
             stmt.setString(1, LoanStatus.LOANED.name());
@@ -253,9 +248,8 @@ public class DatabaseLoanDAO implements LoanDAO {
 
     @Override
     public List<Loan> searchLoansByUser(String searchText) throws DAOException {
-        String sql = """
-            SELECT """ + LOAN_COLUMNS + """
-            FROM loans l
+        String sql = BASE_SELECT + """
+        	 l
             JOIN users u ON l.user_email = u.email
             WHERE LOWER(u.email) LIKE ?
                OR LOWER(u.first_name) LIKE ?
@@ -273,9 +267,8 @@ public class DatabaseLoanDAO implements LoanDAO {
 
     @Override
     public List<Loan> searchLoansByBook(String searchText) throws DAOException {
-        String sql = """
-            SELECT """ + LOAN_COLUMNS + """
-            FROM loans l
+        String sql = BASE_SELECT + """
+             l
             JOIN books b ON l.book_id = b.id
             WHERE LOWER(b.title) LIKE ?
                OR LOWER(b.author) LIKE ?
