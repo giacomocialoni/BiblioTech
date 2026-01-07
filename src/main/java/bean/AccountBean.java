@@ -61,10 +61,8 @@ public class AccountBean {
 
     public void setRole(String role) throws IncorrectDataException {
         // Permette null per guest, altrimenti solo valori specifici
-        if (role != null && !role.isBlank()) {
-            if (!"admin".equalsIgnoreCase(role) && !"logged_user".equalsIgnoreCase(role)) {
-                throw new IncorrectDataException("Ruolo non valido. Usa 'admin', 'logged_user' o null");
-            }
+        if (role != null && !role.isBlank() && !"admin".equalsIgnoreCase(role) && !"logged_user".equalsIgnoreCase(role)) {
+            throw new IncorrectDataException("Ruolo non valido. Usa 'admin', 'logged_user' o null");
         }
         this.role = role;
     }
