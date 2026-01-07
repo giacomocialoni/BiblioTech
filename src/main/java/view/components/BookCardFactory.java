@@ -17,6 +17,9 @@ import bean.BookBean;
 
 import java.io.InputStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class BookCardFactory {
 
     private final StateManager stateManager;
@@ -24,6 +27,7 @@ public class BookCardFactory {
     // Costanti per le classi CSS
     private static final String UNAVAILABLE_STYLE_CLASS = "unavailable";
     private static final String UNAVAILABLE_BANNER_STYLE_CLASS = "unavailable-banner";
+    private static final Logger logger = LoggerFactory.getLogger(ManageBooksCardFactory.class);
 
     public BookCardFactory(StateManager stateManager) {
         this.stateManager = stateManager;
@@ -41,7 +45,7 @@ public class BookCardFactory {
         String imagePath = "/images/" + book.getImagePath();
         InputStream imageStream = getClass().getResourceAsStream(imagePath);
         if (imageStream == null) {
-            System.err.println("Immagine non trovata: " + imagePath);
+            logger.error("Immagine non trovata: " + imagePath);
             imageStream = getClass().getResourceAsStream("/images/default.jpg");
         }
 

@@ -17,8 +17,13 @@ import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReturningLoanCardFactory {
 
+    private static final Logger logger = LoggerFactory.getLogger(ManageBooksCardFactory.class);
+    
 	public HBox createLoanCard(LoanBean loan, BookBean book, Runnable onReturn) {
 	    // Copertina del libro
 	    ImageView coverImage = new ImageView();
@@ -41,7 +46,7 @@ public class ReturningLoanCardFactory {
 	            imageStream.close();
 	        }
 	    } catch (Exception e) {
-	        System.err.println("Errore caricamento immagine: " + e.getMessage());
+	        logger.error("Errore caricamento immagine: " + e.getMessage());
 	    }
 
 	    VBox imageContainer = new VBox(coverImage);

@@ -14,8 +14,13 @@ import bean.PurchaseBean;
 import bean.LoanBean;
 import java.io.InputStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ReservationCardFactory {
 
+    private static final Logger logger = LoggerFactory.getLogger(ManageBooksCardFactory.class);
+    
     public HBox createPurchaseCard(PurchaseBean purchase, BookBean book, Runnable onAccept, Runnable onReject) {
         return createReservationCard(
             book,
@@ -44,7 +49,7 @@ public class ReservationCardFactory {
     	String imagePath = "/images/" + book.getImagePath();
     	InputStream imageStream = getClass().getResourceAsStream(imagePath);
     	if (imageStream == null) {
-    	    System.err.println("Immagine non trovata: " + imagePath);
+    	    logger.error("Immagine non trovata: " + imagePath);
     	    imageStream = getClass().getResourceAsStream("/images/default.jpg");
     	}
 

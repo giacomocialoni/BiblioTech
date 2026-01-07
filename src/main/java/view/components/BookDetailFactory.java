@@ -1,12 +1,18 @@
 package view.components;
 
 import controller.gui.BookDetailControllerGUI;
+import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.Image;
 import bean.BookBean;
 
 import java.io.InputStream;
 
-public class BookDetailFactory {
+public final class BookDetailFactory {
+
+    // Costruttore privato per impedire istanziazione
+    private BookDetailFactory() {
+        throw new UnsupportedOperationException("Classe utility non istanziabile");
+    }
 
     public static void populateBookDetails(BookDetailControllerGUI controller, BookBean book) {
         controller.getTitleLabel().setText(book.getTitle());
@@ -31,22 +37,21 @@ public class BookDetailFactory {
             controller.getQuantitySpinner().setValueFactory(
                 new javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory(1, book.getStock(), 1)
             );
-            // Assicurati che lo spinner sia abilitato
             controller.getQuantitySpinner().setDisable(false);
         } else {
             controller.getAvailabilityLabel().setText("Non disponibile");
             controller.getAvailabilityLabel().setStyle("-fx-text-fill: #a94442;");
-            
+
             // Copertina in bianco e nero
-            javafx.scene.effect.ColorAdjust grayscale = new javafx.scene.effect.ColorAdjust();
+            ColorAdjust grayscale = new ColorAdjust();
             grayscale.setSaturation(-1.0);
             controller.getCoverImage().setEffect(grayscale);
-            
+
             // Spinner a 0 e disabilitato
             controller.getQuantitySpinner().setValueFactory(
                 new javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory(0, 0, 0)
             );
-            controller.getQuantitySpinner().setDisable(true);  // disabilita le freccette
+            controller.getQuantitySpinner().setDisable(true);
         }
     }
 }
