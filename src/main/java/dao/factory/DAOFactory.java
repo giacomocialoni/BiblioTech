@@ -1,28 +1,20 @@
 package dao.factory;
 
-import dao.AccountDAO;
-import dao.BookDAO;
-import dao.CategoryDAO;
-import dao.LoanDAO;
-import dao.PostDAO;
-import dao.PurchaseDAO;
-import dao.UserDAO;
-import dao.WishlistDAO;
+import dao.*;
 import dao.database.DBConnection;
 
 public abstract class DAOFactory {
+
     protected BookDAO bookDAO;
     protected CategoryDAO categoryDAO;
     protected PostDAO postDAO;
     protected AccountDAO accountDAO;
     protected UserDAO userDAO;
-    private LoanDAO loanDAO;
-    private PurchaseDAO purchaseDAO;
+    protected LoanDAO loanDAO;
+    protected PurchaseDAO purchaseDAO;
     protected WishlistDAO wishlistDAO;
 
-    private static DAOFactory activeFactory;
-    
-    // Metodi astratti
+    // --- Metodi astratti per creare i DAO ---
     protected abstract BookDAO createBookDAO();
     protected abstract CategoryDAO createCategoryDAO();
     protected abstract PostDAO createPostDAO();
@@ -32,19 +24,7 @@ public abstract class DAOFactory {
     protected abstract PurchaseDAO createPurchaseDAO();
     protected abstract WishlistDAO createWishlistDAO();
 
-    // Gestione singleton
-    public static void setActiveFactory(DAOFactory factory) {
-        activeFactory = factory;
-    }
-
-    public static DAOFactory getActiveFactory() {
-        if (activeFactory == null) {
-            throw new IllegalStateException("DAOFactory non inizializzata. Chiamare setActiveFactory() prima.");
-        }
-        return activeFactory;
-    }
-
-    // Getter DAO
+    // --- Getter DAO con lazy initialization ---
     public BookDAO getBookDAO() {
         if (bookDAO == null)
             bookDAO = createBookDAO();
@@ -62,19 +42,19 @@ public abstract class DAOFactory {
             postDAO = createPostDAO();
         return postDAO;
     }
-    
+
     public AccountDAO getAccountDAO() {
         if (accountDAO == null)
-        	accountDAO = createAccountDAO();
+            accountDAO = createAccountDAO();
         return accountDAO;
     }
-    
+
     public UserDAO getUserDAO() {
         if (userDAO == null)
-            userDAO = createUserDAO();
+            return createUserDAO();
         return userDAO;
     }
-    
+
     public LoanDAO getLoanDAO() {
         if (loanDAO == null)
             loanDAO = createLoanDAO();
@@ -86,14 +66,14 @@ public abstract class DAOFactory {
             purchaseDAO = createPurchaseDAO();
         return purchaseDAO;
     }
-    
+
     public WishlistDAO getWishlistDAO() {
         if (wishlistDAO == null)
             wishlistDAO = createWishlistDAO();
         return wishlistDAO;
     }
-    
-    // Factory selector
+
+    // --- Factory selector ---
     public static DAOFactory getFactory(String mode, DBConnection dbConnection) {
         switch (mode) {
             case "CSV":
