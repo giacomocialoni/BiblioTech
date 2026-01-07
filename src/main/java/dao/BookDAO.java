@@ -2,7 +2,6 @@ package dao;
 
 import model.Book;
 import exception.DAOException;
-import exception.DuplicateBookException;
 
 import java.util.List;
 
