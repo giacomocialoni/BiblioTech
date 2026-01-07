@@ -14,7 +14,7 @@ public class InMemoryWishlistDAO implements WishlistDAO {
     private static InMemoryWishlistDAO instance = null;
     private List<Wishlist> wishlistItems = new ArrayList<>();
 
-    private InMemoryWishlistDAO() {}
+    public InMemoryWishlistDAO() {}
 
     public static InMemoryWishlistDAO getInstance() {
         if (instance == null) {
