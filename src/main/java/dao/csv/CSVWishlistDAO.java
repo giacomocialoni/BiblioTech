@@ -117,7 +117,10 @@ public class CSVWishlistDAO implements WishlistDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+        	String header = reader.readLine();
+            if (header == null || !header.trim().equals(CSV_HEADER)) {
+                throw new DAOException("File CSV utenti non valido: header mancante o non corretto");
+            }
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
@@ -144,7 +147,10 @@ public class CSVWishlistDAO implements WishlistDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+        	String header = reader.readLine();
+            if (header == null || !header.trim().equals(CSV_HEADER)) {
+                throw new DAOException("File CSV utenti non valido: header mancante o non corretto");
+            }
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
