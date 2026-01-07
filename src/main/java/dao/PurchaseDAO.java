@@ -3,7 +3,6 @@ package dao;
 import model.Purchase;
 import utils.PurchaseStatus;
 import exception.DAOException;
-import exception.RecordNotFoundException;
 
 import java.util.List;
 
@@ -13,14 +12,14 @@ public interface PurchaseDAO {
 
     void addPurchase(String userEmail, int bookId) throws DAOException;
     void updatePurchaseStatus(int purchaseId, PurchaseStatus status)
-            throws DAOException, RecordNotFoundException;
+            throws DAOException;
     void rejectPurchase(int purchaseId)
-            throws DAOException, RecordNotFoundException;
+            throws DAOException;
 
     /* ============== RECUPERO ============== */
 
     Purchase getPurchaseById(int purchaseId)
-            throws DAOException, RecordNotFoundException;
+            throws DAOException;
     List<Purchase> getPurchasesByUser(String userEmail) throws DAOException;
     List<Purchase> getPurchasesByBook(int bookId) throws DAOException;
     List<Purchase> getPurchasesByStatus(PurchaseStatus status) throws DAOException;

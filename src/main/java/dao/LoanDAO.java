@@ -2,18 +2,17 @@ package dao;
 
 import model.Loan;
 import exception.DAOException;
-import exception.RecordNotFoundException;
 
 import java.util.List;
 
 public interface LoanDAO {
     // Operazioni CRUD
     void addLoan(String userEmail, int bookId) throws DAOException;
-    void updateLoanStatus(int loanId, String status) throws DAOException, RecordNotFoundException;
-    void deleteLoan(int loanId) throws DAOException, RecordNotFoundException;
+    void updateLoanStatus(int loanId, String status) throws DAOException;
+    void deleteLoan(int loanId) throws DAOException;
     
     // Recupero prestiti
-    Loan getLoanById(int loanId) throws DAOException, RecordNotFoundException;
+    Loan getLoanById(int loanId) throws DAOException;
     List<Loan> getLoansByUser(String userEmail) throws DAOException;
     List<Loan> getActiveLoansByUser(String userEmail) throws DAOException;
     List<Loan> getReservedLoansByUser(String userEmail) throws DAOException;
@@ -26,8 +25,8 @@ public interface LoanDAO {
     List<Loan> getAllReturnedLoans() throws DAOException;
     
     // Operazioni business
-    void acceptLoan(int loanId) throws DAOException, RecordNotFoundException;
-    void returnLoan(int loanId) throws DAOException, RecordNotFoundException;
+    void acceptLoan(int loanId) throws DAOException;
+    void returnLoan(int loanId) throws DAOException;
     
     // Ricerca
     List<Loan> searchLoansByUser(String searchText) throws DAOException;
