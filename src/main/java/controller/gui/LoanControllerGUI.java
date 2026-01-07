@@ -42,7 +42,6 @@ public class LoanControllerGUI {
         confirmButton.setDisable(book.getStock() <= 0);
         
         if (book.getStock() <= 0) {
-            confirmButton.setDisable(true);
             confirmButton.setText("Non disponibile");
         } else {
             confirmButton.setText("Conferma Prestito");
@@ -59,42 +58,36 @@ public class LoanControllerGUI {
         LoanResult result = userLoanFacade.loanBook(book.getId());
         
         switch (result) {
-            case SUCCESS -> {
-                stateManager.setState(new SuccessState(
-                        stateManager, 
-                        "Prestito effettuato con successo! Ricorda di restituire entro 30 giorni."
-                    ));
-            }
-            case INSUFFICIENT_STOCK -> {
-                stateManager.setState(new ErrorState(
-                    stateManager, 
-                    "Libro non più disponibile per il prestito!"
-                ));
-            }
-            case MAX_LOANS_REACHED -> {
-                stateManager.setState(new ErrorState(
-                    stateManager, 
-                    "Hai raggiunto il limite massimo di 3 prestiti attivi.\nRestituisci un libro per prenderne un altro."
-                ));
-            }
-            case EXPIRED_LOAN_EXISTS -> {
-                stateManager.setState(new ErrorState(
-                    stateManager, 
-                    "Hai prestiti scaduti da restituire prima di prenderne di nuovi."
-                ));
-            }
-            case NOT_LOGGED -> {
-                stateManager.setState(new ErrorState(
-                    stateManager,
-                    "Devi essere loggato per effettuare un prestito."
-                ));
-            }
-            case ERROR -> {
-                stateManager.setState(new ErrorState(
-                    stateManager, 
-                    "Errore durante il prestito. Riprova più tardi."
-                ));
-            }
+            case SUCCESS -> stateManager.setState(new SuccessState(
+                stateManager, 
+                "Prestito effettuato con successo! Ricorda di restituire entro 30 giorni."
+            ));
+            
+            case INSUFFICIENT_STOCK -> stateManager.setState(new ErrorState(
+                stateManager, 
+                "Libro non più disponibile per il prestito!"
+            ));
+            
+            case MAX_LOANS_REACHED -> stateManager.setState(new ErrorState(
+                stateManager, 
+                "Hai raggiunto il limite massimo di 3 prestiti attivi.\nRestituisci un libro per prenderne un altro."
+            ));
+            
+            case EXPIRED_LOAN_EXISTS -> stateManager.setState(new ErrorState(
+                stateManager, 
+                "Hai prestiti scaduti da restituire prima di prenderne di nuovi."
+            ));
+            
+            case NOT_LOGGED -> stateManager.setState(new ErrorState(
+                stateManager,
+                "Devi essere loggato per effettuare un prestito."
+            ));
+            
+            case ERROR -> stateManager.setState(new ErrorState(
+                stateManager, 
+                "Errore durante il prestito. Riprova più tardi."
+            ));
+            
             default -> throw new IllegalArgumentException("Unexpected value: " + result);
         }
     }
