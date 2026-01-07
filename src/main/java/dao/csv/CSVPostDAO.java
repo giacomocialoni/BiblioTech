@@ -28,7 +28,7 @@ public class CSVPostDAO implements PostDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-        	String header = reader.readLine();
+            String header = reader.readLine();
             if (header == null || !header.trim().equals(CSV_HEADER)) {
                 throw new DAOException("File CSV post non valido: header mancante o non corretto");
             }
@@ -75,15 +75,15 @@ public class CSVPostDAO implements PostDAO {
                 StandardOpenOption.APPEND)) {
             
             if (!fileExists || Files.size(path) == 0) {
-                writer.write("user_fk,title,content,post_date");
+                writer.write(CSV_HEADER);
                 writer.newLine();
             }
             
             String line = String.join(",",
-                post.getUserEmail(),
-                "\"" + escapeQuotes(post.getTitle()) + "\"",
-                "\"" + escapeQuotes(post.getContent()) + "\"",
-                "\"" + post.getPostDate().format(DATE_FORMATTER) + "\""
+                escapeField(post.getUserEmail()),
+                escapeField(escapeQuotes(post.getTitle())),
+                escapeField(escapeQuotes(post.getContent())),
+                escapeField(post.getPostDate().format(DATE_FORMATTER))
             );
             
             writer.write(line);
@@ -141,5 +141,16 @@ public class CSVPostDAO implements PostDAO {
             return "";
         }
         return text.replace("\"", "\"\"");
+    }
+    
+    private String escapeField(String text) {
+        if (text == null) {
+            return "";
+        }
+        
+        if (text.contains(",") || text.contains("\"") || text.contains("\n")) {
+            return "\"" + text.replace("\"", "\"\"") + "\"";
+        }
+        return text;
     }
 }

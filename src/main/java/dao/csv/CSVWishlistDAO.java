@@ -4,7 +4,6 @@ import dao.WishlistDAO;
 import model.User;
 import model.Wishlist;
 import exception.DAOException;
-import exception.RecordNotFoundException;
 
 import java.io.*;
 import java.nio.file.*;
@@ -108,7 +107,7 @@ public class CSVWishlistDAO implements WishlistDAO {
     }
     
     @Override
-    public List<Wishlist> getWishlistByUser(String userEmail) throws DAOException, RecordNotFoundException {
+    public List<Wishlist> getWishlistByUser(String userEmail) throws DAOException {
         List<Wishlist> wishlist = new ArrayList<>();
         Path path = Paths.get(FILE_PATH);
         

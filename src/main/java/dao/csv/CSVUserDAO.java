@@ -3,7 +3,6 @@ package dao.csv;
 import dao.UserDAO;
 import model.User;
 import exception.DAOException;
-import exception.RecordNotFoundException;
 
 import java.io.*;
 import java.nio.file.*;
@@ -13,18 +12,17 @@ import java.util.List;
 public class CSVUserDAO implements UserDAO {
     
     private static final String FILE_PATH = "src/main/resources/data/users.csv";
-    private static final String[] COLUMNS = {"email", "password", "first_name", "last_name", "role"};
     private static final String CSV_HEADER = "email,password,first_name,last_name,role";
     
     @Override
-    public User getUser(String email) throws DAOException, RecordNotFoundException {
+    public User getUser(String email) throws DAOException {
         Path path = Paths.get(FILE_PATH);
         if (!Files.exists(path)) {
-            throw new RecordNotFoundException("Utente non trovato con email: " + email);
+            throw new DAOException("Utente non trovato con email: " + email);
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-        	String header = reader.readLine();
+            String header = reader.readLine();
             if (header == null || !header.trim().equals(CSV_HEADER)) {
                 throw new DAOException("File CSV utenti non valido: header mancante o non corretto");
             }
@@ -32,7 +30,7 @@ public class CSVUserDAO implements UserDAO {
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
                 List<String> fields = parseCSVLine(line);
-                if (fields.size() >= COLUMNS.length && fields.get(0).equalsIgnoreCase(email)) {
+                if (fields.size() >= 5 && fields.get(0).equalsIgnoreCase(email)) {
                     return new User(fields.get(0), fields.get(1), fields.get(2), fields.get(3));
                 }
             }
@@ -41,7 +39,7 @@ public class CSVUserDAO implements UserDAO {
             throw new DAOException("Errore durante la ricerca dell'utente " + email, e);
         }
         
-        throw new RecordNotFoundException("Utente non trovato con email: " + email);
+        throw new DAOException("Utente non trovato con email: " + email);
     }
     
     @Override
@@ -61,7 +59,7 @@ public class CSVUserDAO implements UserDAO {
         String lowerSearch = searchTerm.toLowerCase();
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-        	String header = reader.readLine();
+            String header = reader.readLine();
             if (header == null || !header.trim().equals(CSV_HEADER)) {
                 throw new DAOException("File CSV utenti non valido: header mancante o non corretto");
             }
@@ -69,7 +67,7 @@ public class CSVUserDAO implements UserDAO {
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
                 List<String> fields = parseCSVLine(line);
-                if (fields.size() >= COLUMNS.length && "logged_user".equals(fields.get(4))) {
+                if (fields.size() >= 5 && "logged_user".equals(fields.get(4))) {
                     String email = fields.get(0);
                     String firstName = fields.get(2);
                     String lastName = fields.get(3);
@@ -91,13 +89,13 @@ public class CSVUserDAO implements UserDAO {
     }
     
     @Override
-    public void deleteUser(String email) throws DAOException, RecordNotFoundException {
+    public void deleteUser(String email) throws DAOException {
         List<String> lines = new ArrayList<>();
         boolean found = false;
         Path path = Paths.get(FILE_PATH);
         
         if (!Files.exists(path)) {
-            throw new RecordNotFoundException("Utente non trovato: " + email);
+            throw new DAOException("Utente non trovato: " + email);
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
@@ -106,7 +104,7 @@ public class CSVUserDAO implements UserDAO {
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
                 List<String> fields = parseCSVLine(line);
-                if (fields.size() >= COLUMNS.length && fields.get(0).equalsIgnoreCase(email)) {
+                if (fields.size() >= 5 && fields.get(0).equalsIgnoreCase(email)) {
                     found = true;
                 } else {
                     lines.add(line);
@@ -118,7 +116,7 @@ public class CSVUserDAO implements UserDAO {
         }
         
         if (!found) {
-            throw new RecordNotFoundException("Utente non trovato per la cancellazione: " + email);
+            throw new DAOException("Utente non trovato per la cancellazione: " + email);
         }
         
         try (BufferedWriter writer = Files.newBufferedWriter(path)) {
@@ -141,7 +139,7 @@ public class CSVUserDAO implements UserDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-        	String header = reader.readLine();
+            String header = reader.readLine();
             if (header == null || !header.trim().equals(CSV_HEADER)) {
                 throw new DAOException("File CSV utenti non valido: header mancante o non corretto");
             }
@@ -149,7 +147,7 @@ public class CSVUserDAO implements UserDAO {
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
                 List<String> fields = parseCSVLine(line);
-                if (fields.size() >= COLUMNS.length) {
+                if (fields.size() >= 5) {
                     if (roleFilter == null || roleFilter.equals(fields.get(4))) {
                         users.add(new User(fields.get(0), fields.get(1), fields.get(2), fields.get(3)));
                     }

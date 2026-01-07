@@ -2,7 +2,6 @@ package dao.csv;
 
 import dao.PurchaseDAO;
 import exception.DAOException;
-import exception.RecordNotFoundException;
 import model.Purchase;
 import utils.PurchaseStatus;
 
@@ -16,7 +15,6 @@ import java.util.List;
 public class CSVPurchaseDAO implements PurchaseDAO {
     
     private static final String FILE_PATH = "src/main/resources/data/purchases.csv";
-    private static final String[] COLUMNS = {"id", "user_email", "book_id", "status", "status_date"};
     private static final String CSV_HEADER = "id,user_email,book_id,status,status_date";
     
     @Override
@@ -29,7 +27,7 @@ public class CSVPurchaseDAO implements PurchaseDAO {
                     StandardOpenOption.CREATE,
                     StandardOpenOption.APPEND)) {
                 
-            	if (!fileExists || Files.size(path) == 0) {
+                if (!fileExists || Files.size(path) == 0) {
                     writer.write(CSV_HEADER);
                     writer.newLine();
                 }
@@ -54,7 +52,7 @@ public class CSVPurchaseDAO implements PurchaseDAO {
     
     @Override
     public void updatePurchaseStatus(int purchaseId, PurchaseStatus status) 
-            throws DAOException, RecordNotFoundException {
+            throws DAOException {
         updatePurchase(purchaseId, purchase -> {
             purchase.setStatus(status);
             purchase.setStatusDate(LocalDate.now());
@@ -62,12 +60,12 @@ public class CSVPurchaseDAO implements PurchaseDAO {
     }
     
     @Override
-    public void rejectPurchase(int purchaseId) throws DAOException, RecordNotFoundException {
+    public void rejectPurchase(int purchaseId) throws DAOException {
         List<Purchase> purchases = loadAllPurchases();
         boolean removed = purchases.removeIf(p -> p.getId() == purchaseId);
         
         if (!removed) {
-            throw new RecordNotFoundException("Acquisto non trovato: ID " + purchaseId);
+            throw new DAOException("Acquisto non trovato: ID " + purchaseId);
         }
         
         saveAllPurchases(purchases);
@@ -75,11 +73,11 @@ public class CSVPurchaseDAO implements PurchaseDAO {
     
     @Override
     public Purchase getPurchaseById(int purchaseId) 
-            throws DAOException, RecordNotFoundException {
+            throws DAOException {
         return loadAllPurchases().stream()
                 .filter(p -> p.getId() == purchaseId)
                 .findFirst()
-                .orElseThrow(() -> new RecordNotFoundException("Acquisto non trovato: ID " + purchaseId));
+                .orElseThrow(() -> new DAOException("Acquisto non trovato: ID " + purchaseId));
     }
     
     @Override
@@ -161,7 +159,7 @@ public class CSVPurchaseDAO implements PurchaseDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-        	String header = reader.readLine();
+            String header = reader.readLine();
             if (header == null || !header.trim().equals(CSV_HEADER)) {
                 throw new DAOException("File CSV acquisti non valido: header mancante o non corretto");
             }
@@ -192,7 +190,7 @@ public class CSVPurchaseDAO implements PurchaseDAO {
             Files.createDirectories(path.getParent());
             
             try (BufferedWriter writer = Files.newBufferedWriter(path)) {
-                writer.write(String.join(",", COLUMNS));
+                writer.write(CSV_HEADER);
                 writer.newLine();
                 
                 for (Purchase purchase : purchases) {
@@ -209,7 +207,7 @@ public class CSVPurchaseDAO implements PurchaseDAO {
     private Purchase parsePurchase(String line) {
         List<String> fields = parseCSVLine(line);
         
-        if (fields.size() < COLUMNS.length) {
+        if (fields.size() < 5) {
             return null;
         }
         
@@ -274,7 +272,7 @@ public class CSVPurchaseDAO implements PurchaseDAO {
     }
     
     private void updatePurchase(int purchaseId, PurchaseUpdater updater) 
-            throws DAOException, RecordNotFoundException {
+            throws DAOException {
         List<Purchase> purchases = loadAllPurchases();
         boolean found = false;
         
@@ -287,7 +285,7 @@ public class CSVPurchaseDAO implements PurchaseDAO {
         }
         
         if (!found) {
-            throw new RecordNotFoundException("Acquisto non trovato: ID " + purchaseId);
+            throw new DAOException("Acquisto non trovato: ID " + purchaseId);
         }
         
         saveAllPurchases(purchases);

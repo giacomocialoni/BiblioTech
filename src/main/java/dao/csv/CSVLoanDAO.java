@@ -2,7 +2,6 @@ package dao.csv;
 
 import dao.LoanDAO;
 import exception.DAOException;
-import exception.RecordNotFoundException;
 import model.Loan;
 import utils.Constants;
 import utils.LoanStatus;
@@ -54,7 +53,7 @@ public class CSVLoanDAO implements LoanDAO {
     }
 
     @Override
-    public void updateLoanStatus(int loanId, String status) throws DAOException, RecordNotFoundException {
+    public void updateLoanStatus(int loanId, String status) throws DAOException {
         LoanStatus newStatus = LoanStatus.valueOf(status);
         updateLoanInternal(loanId, loan -> loan.setStatus(newStatus));
 
@@ -67,33 +66,33 @@ public class CSVLoanDAO implements LoanDAO {
     }
 
     @Override
-    public void acceptLoan(int loanId) throws DAOException, RecordNotFoundException {
+    public void acceptLoan(int loanId) throws DAOException {
         updateLoanStatus(loanId, LoanStatus.LOANED.name());
     }
 
     @Override
-    public void returnLoan(int loanId) throws DAOException, RecordNotFoundException {
+    public void returnLoan(int loanId) throws DAOException {
         updateLoanInternal(loanId, loan -> loan.setStatus(LoanStatus.RETURNED));
     }
 
     @Override
-    public void deleteLoan(int loanId) throws DAOException, RecordNotFoundException {
+    public void deleteLoan(int loanId) throws DAOException {
         List<Loan> loans = loadAllLoans();
 
         boolean removed = loans.removeIf(l -> l.getId() == loanId);
         if (!removed) {
-            throw new RecordNotFoundException("Prestito non trovato: ID " + loanId);
+            throw new DAOException("Prestito non trovato: ID " + loanId);
         }
 
         saveAllLoans(loans);
     }
 
     @Override
-    public Loan getLoanById(int loanId) throws DAOException, RecordNotFoundException {
+    public Loan getLoanById(int loanId) throws DAOException {
         return loadAllLoans().stream()
                 .filter(l -> l.getId() == loanId)
                 .findFirst()
-                .orElseThrow(() -> new RecordNotFoundException("Prestito non trovato: ID " + loanId));
+                .orElseThrow(() -> new DAOException("Prestito non trovato: ID " + loanId));
     }
 
     @Override
@@ -208,9 +207,9 @@ public class CSVLoanDAO implements LoanDAO {
         }
 
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-        	String header = reader.readLine();
+            String header = reader.readLine();
             if (header == null || !header.trim().equals(CSV_HEADER)) {
-                throw new DAOException("File CSV utenti non valido: header mancante o non corretto");
+                throw new DAOException("File CSV prestiti non valido: header mancante o non corretto");
             }
             
             String line;
@@ -289,7 +288,7 @@ public class CSVLoanDAO implements LoanDAO {
                 .orElse(0) + 1;
     }
 
-    private void updateLoanInternal(int loanId, LoanUpdater updater) throws DAOException, RecordNotFoundException {
+    private void updateLoanInternal(int loanId, LoanUpdater updater) throws DAOException {
         List<Loan> loans = loadAllLoans();
 
         for (Loan loan : loans) {
@@ -300,7 +299,7 @@ public class CSVLoanDAO implements LoanDAO {
             }
         }
 
-        throw new RecordNotFoundException("Prestito non trovato: ID " + loanId);
+        throw new DAOException("Prestito non trovato: ID " + loanId);
     }
 
     private boolean isActive(Loan loan) {

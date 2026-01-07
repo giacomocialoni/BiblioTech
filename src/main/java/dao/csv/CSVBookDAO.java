@@ -3,7 +3,6 @@ package dao.csv;
 import dao.BookDAO;
 import exception.DAOException;
 import exception.DuplicateBookException;
-import exception.RecordNotFoundException;
 import model.Book;
 
 import java.io.*;
@@ -34,15 +33,15 @@ public class CSVBookDAO implements BookDAO {
     }
     
     @Override
-    public Book getBookById(int id) throws RecordNotFoundException {
+    public Book getBookById(int id) throws DAOException {
         return books.stream()
                 .filter(book -> book.getId() == id)
                 .findFirst()
-                .orElseThrow(() -> new RecordNotFoundException("Libro con ID " + id + " non trovato"));
+                .orElseThrow(() -> new DAOException("Libro con ID " + id + " non trovato"));
     }
     
     @Override
-    public void addBook(Book book) throws DAOException, DuplicateBookException {
+    public void addBook(Book book) throws DAOException {
         validateBookForAddition(book);
         
         if (book.getId() <= 0) {
@@ -69,7 +68,7 @@ public class CSVBookDAO implements BookDAO {
     }
     
     @Override
-    public void updateBook(Book book) throws DAOException, RecordNotFoundException {
+    public void updateBook(Book book) throws DAOException {
         for (int i = 0; i < books.size(); i++) {
             if (books.get(i).getId() == book.getId()) {
                 books.set(i, book);
@@ -78,15 +77,15 @@ public class CSVBookDAO implements BookDAO {
             }
         }
         
-        throw new RecordNotFoundException("Libro con ID " + book.getId() + " non trovato");
+        throw new DAOException("Libro con ID " + book.getId() + " non trovato");
     }
     
     @Override
-    public void deleteBook(int id) throws DAOException, RecordNotFoundException {
+    public void deleteBook(int id) throws DAOException {
         boolean removed = books.removeIf(book -> book.getId() == id);
         
         if (!removed) {
-            throw new RecordNotFoundException("Libro con ID " + id + " non trovato");
+            throw new DAOException("Libro con ID " + id + " non trovato");
         }
         
         saveBooks();
@@ -225,7 +224,7 @@ public class CSVBookDAO implements BookDAO {
     }
     
     private void loadFromReader(BufferedReader reader) throws IOException {
-    	String header = reader.readLine();
+        String header = reader.readLine();
         if (header == null || !header.trim().equals(CSV_HEADER)) {
             throw new IOException("File CSV dei libri non valido: header mancante o non corretto");
         }
@@ -267,7 +266,7 @@ public class CSVBookDAO implements BookDAO {
             Files.createDirectories(path.getParent());
             
             try (BufferedWriter writer = Files.newBufferedWriter(path)) {
-                writer.write(String.join(",", COLUMNS));
+                writer.write(CSV_HEADER);
                 writer.newLine();
                 
                 for (Book book : books) {

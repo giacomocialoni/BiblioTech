@@ -3,7 +3,6 @@ package dao.csv;
 import dao.AccountDAO;
 import exception.DAOException;
 import exception.EmailAlreadyRegisteredException;
-import exception.RecordNotFoundException;
 import model.Account;
 import model.Admin;
 import model.User;
@@ -19,14 +18,14 @@ public class CSVAccountDAO implements AccountDAO {
     private static final String CSV_HEADER = "email,password,first_name,last_name,role";
     
     @Override
-    public Account login(String email, String password) throws DAOException, RecordNotFoundException {
+    public Account login(String email, String password) throws DAOException {
         Path path = Paths.get(FILE_PATH);
         if (!Files.exists(path)) {
-            throw new RecordNotFoundException("Credenziali non valide");
+            throw new DAOException("Credenziali non valide");
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-        	String header = reader.readLine();
+            String header = reader.readLine();
             if (header == null || !header.trim().equals(CSV_HEADER)) {
                 throw new DAOException("File CSV non valido: header mancante o non corretto");
             }
@@ -47,7 +46,7 @@ public class CSVAccountDAO implements AccountDAO {
             throw new DAOException("Errore durante il login", e);
         }
         
-        throw new RecordNotFoundException("Credenziali non valide");
+        throw new DAOException("Credenziali non valide");
     }
     
     @Override
@@ -73,7 +72,7 @@ public class CSVAccountDAO implements AccountDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-        	String header = reader.readLine();
+            String header = reader.readLine();
             if (header == null || !header.trim().equals(CSV_HEADER)) {
                 throw new DAOException("File CSV non valido: header mancante o non corretto");
             }
@@ -102,7 +101,7 @@ public class CSVAccountDAO implements AccountDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-        	String header = reader.readLine();
+            String header = reader.readLine();
             if (header == null || !header.trim().equals(CSV_HEADER)) {
                 throw new DAOException("File CSV non valido: header mancante o non corretto");
             }
@@ -128,7 +127,7 @@ public class CSVAccountDAO implements AccountDAO {
                     StandardOpenOption.CREATE, 
                     StandardOpenOption.TRUNCATE_EXISTING)) {
                 
-                writer.write("email,password,first_name,last_name,role");
+                writer.write(CSV_HEADER);
                 writer.newLine();
                 
                 for (String[] user : users) {

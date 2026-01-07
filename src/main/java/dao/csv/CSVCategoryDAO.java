@@ -3,7 +3,6 @@ package dao.csv;
 import dao.CategoryDAO;
 import exception.DAOException;
 import exception.DuplicateRecordException;
-import exception.RecordNotFoundException;
 import model.Category;
 
 import java.io.*;
@@ -26,7 +25,7 @@ public class CSVCategoryDAO implements CategoryDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-        	String header = reader.readLine();
+            String header = reader.readLine();
             if (header == null || !header.trim().equals(CSV_HEADER)) {
                 throw new DAOException("File CSV categorie non valido: header mancante o non corretto");
             }
@@ -62,14 +61,14 @@ public class CSVCategoryDAO implements CategoryDAO {
     }
     
     @Override
-    public void deleteCategory(String categoryName) throws DAOException, RecordNotFoundException {
+    public void deleteCategory(String categoryName) throws DAOException {
         List<Category> categories = getAllCategories();
         
         boolean removed = categories.removeIf(
             cat -> cat.getCategory().equalsIgnoreCase(categoryName));
         
         if (!removed) {
-            throw new RecordNotFoundException("Categoria non trovata: " + categoryName);
+            throw new DAOException("Categoria non trovata: " + categoryName);
         }
         
         saveAllCategories(categories);
@@ -84,7 +83,7 @@ public class CSVCategoryDAO implements CategoryDAO {
                     StandardOpenOption.CREATE, 
                     StandardOpenOption.TRUNCATE_EXISTING)) {
                 
-                writer.write("category");
+                writer.write(CSV_HEADER);
                 writer.newLine();
                 
                 for (Category category : categories) {
