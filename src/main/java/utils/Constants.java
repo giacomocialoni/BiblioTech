@@ -1,7 +1,11 @@
 package utils;
 
-public class Constants {
+public final class Constants {
 
-	public final static int LOANING_DAYS = 30;
-    public final static int MAX_ACTIVE_LOANS = 3;
+    public static final int LOANING_DAYS = 30;
+    public static final int MAX_ACTIVE_LOANS = 3;
+
+    private Constants() {
+        // Utility class - no instantiation
+    }
 }
