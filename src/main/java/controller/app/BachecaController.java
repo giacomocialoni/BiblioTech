@@ -1,8 +1,6 @@
 package controller.app;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
 import dao.PostDAO;
 import dao.factory.DAOFactory;
 import exception.DAOException;
@@ -24,11 +22,9 @@ public class BachecaController {
     public List<PostBean> getAllPostsOrderedByDate() {
         try {
             List<Post> posts = postDAO.getAllPostsOrderedByDate();
-
             return posts.stream()
                     .map(this::toPostBean)
-                    .collect(Collectors.toList());
-
+                    .toList();  
         } catch (DAOException e) {
             logger.error("Errore DAO durante il recupero dei post", e);
             return List.of();

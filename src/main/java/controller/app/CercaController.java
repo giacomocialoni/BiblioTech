@@ -33,10 +33,10 @@ public class CercaController {
             List<Category> categories = categoryDAO.getAllCategories();
             return categories.stream()
                     .map(Category::getCategory)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             logger.error("Errore nel recupero delle categorie", e);
-            return Collections.emptyList();
+            return List.of(); 
         }
     }
 

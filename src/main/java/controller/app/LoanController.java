@@ -86,10 +86,10 @@ public class LoanController {
             return loanDAO.getActiveLoansByUser(userEmail)
                     .stream()
                     .map(this::toLoanBean)
-                    .collect(Collectors.toList());
+                    .toList(); 
         } catch (DAOException e) {
             logger.error("Errore recupero prestiti attivi", e);
-            return List.of();
+            return List.of(); 
         }
     }
 

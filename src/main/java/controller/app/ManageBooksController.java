@@ -145,7 +145,7 @@ public class ManageBooksController {
     private List<BookBean> mapBooks(List<Book> books) {
         return books.stream()
                 .map(this::mapBook)
-                .collect(Collectors.toList());
+                .toList(); 
     }
 
     private BookBean mapBook(Book book) {
