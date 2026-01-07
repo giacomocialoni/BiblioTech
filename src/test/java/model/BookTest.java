@@ -94,18 +94,15 @@ class BookTest {
 
     @Test
     void testBuilderWithMissingRequiredFields() {
-        // Test che il builder lancia eccezione per campi richiesti mancanti
-        assertThrows(IllegalArgumentException.class, () -> {
-            Book.builder().build();
-        });
+        // Single assertion with lambda that may throw runtime exception
+        assertThrows(IllegalArgumentException.class, () -> Book.builder().build());
         
-        assertThrows(IllegalArgumentException.class, () -> {
-            Book.builder()
-                .title("Only Title")
-                .build();
-        });
-        
-        // Test che builder funziona con tutti i campi richiesti
+        // Another single assertion for missing author
+        assertThrows(IllegalArgumentException.class, () -> Book.builder().title("Only Title").build());
+    }
+
+    @Test
+    void testBuilderWithRequiredFields() {
         Book book = Book.builder()
             .title("Valid Title")
             .author("Valid Author")
@@ -123,14 +120,14 @@ class BookTest {
             .author("Test Author")
             .build();
 
-        assertEquals(0, book.getId()); // default
-        assertEquals(0, book.getYear()); // default
-        assertEquals(0, book.getPages()); // default
-        assertEquals(0, book.getStock()); // default
-        assertEquals(0.0, book.getPrice()); // default
-        assertNull(book.getPublisher()); // default
-        assertNull(book.getIsbn()); // default
-        assertNull(book.getPlot()); // default
-        assertEquals("default.jpg", book.getImagePath()); // default dal builder
+        assertEquals(0, book.getId());
+        assertEquals(0, book.getYear());
+        assertEquals(0, book.getPages());
+        assertEquals(0, book.getStock());
+        assertEquals(0.0, book.getPrice());
+        assertNull(book.getPublisher());
+        assertNull(book.getIsbn());
+        assertNull(book.getPlot());
+        assertEquals("default.jpg", book.getImagePath());
     }
 }
