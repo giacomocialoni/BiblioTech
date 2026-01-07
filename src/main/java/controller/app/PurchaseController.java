@@ -69,7 +69,7 @@ public class PurchaseController {
 
     public List<PurchaseBean> getAllReservedPurchases() {
         try {
-            return purchaseDAO.getAllReservedPurchases()
+            return purchaseDAO.getPurchasesByStatus(PurchaseStatus.RESERVED)
                     .stream()
                     .map(this::toPurchaseBean)
                     .collect(Collectors.toList());
@@ -102,7 +102,7 @@ public class PurchaseController {
 
     public boolean acceptPurchase(int purchaseId) {
         try {
-            purchaseDAO.acceptPurchase(purchaseId);
+            purchaseDAO.updatePurchaseStatus(purchaseId, PurchaseStatus.PURCHASED);
             return true;
         } catch (DAOException e) {
             return false;

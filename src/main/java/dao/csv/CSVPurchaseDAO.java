@@ -58,9 +58,9 @@ public class CSVPurchaseDAO implements PurchaseDAO {
     }
     
     @Override
-    public void updatePurchaseStatus(int purchaseId, String status) throws DAOException {
+    public void updatePurchaseStatus(int purchaseId, PurchaseStatus status) throws DAOException {
         updatePurchase(purchaseId, purchase -> {
-            purchase.setStatus(PurchaseStatus.valueOf(status));
+            purchase.setStatus(status);
             purchase.setStatusDate(LocalDate.now());
         });
         LOGGER.info("Stato acquisto aggiornato: ID {} -> {}", purchaseId, status);
@@ -110,26 +110,11 @@ public class CSVPurchaseDAO implements PurchaseDAO {
     }
     
     @Override
-    public List<Purchase> getPurchasesByStatus(String status) throws DAOException {
-        PurchaseStatus purchaseStatus = PurchaseStatus.valueOf(status);
+    public List<Purchase> getPurchasesByStatus(PurchaseStatus status) throws DAOException {
         List<Purchase> purchases = loadAllPurchases().stream()
-                .filter(p -> p.getStatus() == purchaseStatus)
+                .filter(p -> p.getStatus() == status)
                 .toList();
         LOGGER.debug("Recuperati {} acquisti con stato {}", purchases.size(), status);
-        return purchases;
-    }
-    
-    @Override
-    public List<Purchase> getAllReservedPurchases() throws DAOException {
-        List<Purchase> purchases = getPurchasesByStatus("RESERVED");
-        LOGGER.debug("Recuperati tutti i {} acquisti riservati", purchases.size());
-        return purchases;
-    }
-    
-    @Override
-    public List<Purchase> getAllCompletedPurchases() throws DAOException {
-        List<Purchase> purchases = getPurchasesByStatus("PURCHASED");
-        LOGGER.debug("Recuperati tutti i {} acquisti completati", purchases.size());
         return purchases;
     }
     
@@ -138,15 +123,6 @@ public class CSVPurchaseDAO implements PurchaseDAO {
         List<Purchase> purchases = loadAllPurchases();
         LOGGER.debug("Recuperati tutti i {} acquisti", purchases.size());
         return purchases;
-    }
-    
-    @Override
-    public void acceptPurchase(int purchaseId) throws DAOException {
-        updatePurchase(purchaseId, purchase -> {
-            purchase.setStatus(PurchaseStatus.PURCHASED);
-            purchase.setStatusDate(LocalDate.now());
-        });
-        LOGGER.info("Acquisto accettato: ID {}", purchaseId);
     }
     
     @Override

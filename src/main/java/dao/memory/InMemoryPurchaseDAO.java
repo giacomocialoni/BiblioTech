@@ -29,9 +29,9 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
     }
 
     @Override
-    public void updatePurchaseStatus(int purchaseId, String status) throws DAOException, RecordNotFoundException {
+    public void updatePurchaseStatus(int purchaseId, PurchaseStatus status) throws DAOException, RecordNotFoundException {
         Purchase purchase = getPurchaseById(purchaseId);
-        purchase.setStatus(PurchaseStatus.valueOf(status));
+        purchase.setStatus(status);
         purchase.setStatusDate(LocalDate.now());
     }
 
@@ -71,33 +71,15 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
     }
 
     @Override
-    public List<Purchase> getPurchasesByStatus(String status) throws DAOException {
-        PurchaseStatus purchaseStatus = PurchaseStatus.valueOf(status);
+    public List<Purchase> getPurchasesByStatus(PurchaseStatus status) throws DAOException {
         return purchases.stream()
-                .filter(p -> p.getStatus() == purchaseStatus)
+                .filter(p -> p.getStatus() == status)
                 .toList();
-    }
-
-    @Override
-    public List<Purchase> getAllReservedPurchases() throws DAOException {
-        return getPurchasesByStatus("RESERVED");
-    }
-
-    @Override
-    public List<Purchase> getAllCompletedPurchases() throws DAOException {
-        return getPurchasesByStatus("PURCHASED");
     }
 
     @Override
     public List<Purchase> getAllPurchases() throws DAOException {
         return new ArrayList<>(purchases);
-    }
-
-    @Override
-    public void acceptPurchase(int purchaseId) throws DAOException, RecordNotFoundException {
-        Purchase purchase = getPurchaseById(purchaseId);
-        purchase.setStatus(PurchaseStatus.PURCHASED);
-        purchase.setStatusDate(LocalDate.now());
     }
 
     @Override
