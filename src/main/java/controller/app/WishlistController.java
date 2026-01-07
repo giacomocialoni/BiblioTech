@@ -27,7 +27,7 @@ public class WishlistController {
     private final BookDAO bookDAO;
 
     public WishlistController() {
-        DAOFactory factory = DAOFactory.getActiveFactory();
+        DAOFactory factory = DAOFactory.getInstance();
         this.userDAO = factory.getUserDAO();
         this.wishlistDAO = factory.getWishlistDAO();
         this.bookDAO = factory.getBookDAO();

@@ -21,7 +21,7 @@ public class PostController {
     private final PostDAO postDAO;
 
     public PostController() {
-        this.postDAO = DAOFactory.getActiveFactory().getPostDAO();
+        this.postDAO = DAOFactory.getInstance().getPostDAO();
     }
 
     // ===== READ =====

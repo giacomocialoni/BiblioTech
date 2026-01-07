@@ -24,8 +24,8 @@ public class CercaController {
     private final CategoryDAO categoryDAO;
 
     public CercaController() {
-        this.bookDAO = DAOFactory.getActiveFactory().getBookDAO();
-        this.categoryDAO = DAOFactory.getActiveFactory().getCategoryDAO();
+        this.bookDAO = DAOFactory.getInstance().getBookDAO();
+        this.categoryDAO = DAOFactory.getInstance().getCategoryDAO();
     }
 
     public List<String> getAllCategoryNames() {

@@ -25,7 +25,7 @@ public class ReturnLoanController {
     private final BookDAO bookDAO;
 
     public ReturnLoanController() {
-        DAOFactory factory = DAOFactory.getActiveFactory();
+        DAOFactory factory = DAOFactory.getInstance();
         this.loanDAO = factory.getLoanDAO();
         this.bookDAO = factory.getBookDAO();
     }

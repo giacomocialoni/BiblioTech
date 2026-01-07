@@ -19,7 +19,7 @@ public class ManageBooksController {
     private final BookDAO bookDAO;
 
     public ManageBooksController() {
-        this.bookDAO = DAOFactory.getActiveFactory().getBookDAO();
+        this.bookDAO = DAOFactory.getInstance().getBookDAO();
     }
 
     // ===== RICERCHE LIBRI =====
@@ -63,6 +63,19 @@ public class ManageBooksController {
         } catch (DAOException e) {
             logger.error("Errore DAO durante il recupero libro: {}", bookId, e);
             return null;
+        }
+    }
+    
+    public List<String> getAllCategoryNames() {
+        try {
+            return DAOFactory.getInstance().getCategoryDAO()
+                             .getAllCategories()
+                             .stream()
+                             .map(model.Category::getCategory)
+                             .toList();
+        } catch (DAOException e) {
+            logger.error("Errore DAO recupero categorie", e);
+            return List.of();
         }
     }
 

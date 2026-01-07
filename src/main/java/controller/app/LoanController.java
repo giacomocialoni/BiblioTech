@@ -27,7 +27,7 @@ public class LoanController {
     private final LoanDAO loanDAO;
 
     public LoanController() {
-        DAOFactory factory = DAOFactory.getActiveFactory();
+        DAOFactory factory = DAOFactory.getInstance();
         this.bookDAO = factory.getBookDAO();
         this.loanDAO = factory.getLoanDAO();
     }

@@ -23,7 +23,7 @@ public class PurchaseController {
     private final PurchaseDAO purchaseDAO;
 
     public PurchaseController() {
-        DAOFactory factory = DAOFactory.getActiveFactory();
+        DAOFactory factory = DAOFactory.getInstance();
         this.bookDAO = factory.getBookDAO();
         this.purchaseDAO = factory.getPurchaseDAO();
     }

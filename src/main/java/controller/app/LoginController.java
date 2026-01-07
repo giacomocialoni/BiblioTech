@@ -18,7 +18,7 @@ public class LoginController {
     private static final Logger logger = LoggerFactory.getLogger(LoginController.class);
 
     public LoginController() {
-        this.accountDAO = DAOFactory.getActiveFactory().getAccountDAO();
+        this.accountDAO = DAOFactory.getInstance().getAccountDAO();
     }
 
     public AccountBean login(String email, String password) throws DAOException {

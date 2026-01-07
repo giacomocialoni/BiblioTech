@@ -4,12 +4,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import app.Session;
 import controller.app.facade.UserLoanFacade;
+import dao.factory.DAOFactory;
 import model.Admin;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import utils.LoanResult;
-import dao.factory.DAOFactory;
-import dao.factory.InMemoryDAOFactory; // oppure quella che usi
 
 public class UserLoanFacadeTest {
 
@@ -18,8 +17,9 @@ public class UserLoanFacadeTest {
 
     @BeforeEach
     void setUp() {
-    	DAOFactory.setActiveFactory(new InMemoryDAOFactory());
-    	
+        // Inizializza la factory singleton
+        DAOFactory.init("INMEMORY", null);
+
         facade = new UserLoanFacade();
         session = Session.getInstance();
         session.logout(); // stato iniziale consistente
@@ -34,7 +34,6 @@ public class UserLoanFacadeTest {
     @Test
     void testLoanBookUnauthorizedUser() {
         Admin admin = new Admin("admin@test.com", "password", "Nome", "Cognome");
-
         session.login(admin);
 
         LoanResult result = facade.loanBook(1);

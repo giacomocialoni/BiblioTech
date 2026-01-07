@@ -8,16 +8,12 @@ import dao.factory.DAOFactory;
 
 public class ApplicationGUI extends Application {
     
-    private static DAOFactory daoFactory;
-    
-    public static void setDaoFactory(DAOFactory factory) {
-        daoFactory = factory;
-    }
-    
     @Override
     public void start(Stage primaryStage) {
+        // Recupero la factory direttamente dal Singleton
+        DAOFactory daoFactory = DAOFactory.getInstance();
         if (daoFactory == null) {
-            throw new IllegalStateException("DAOFactory non impostata. Chiama setDaoFactory() prima di launchApp().");
+            throw new IllegalStateException("DAOFactory non inizializzata. Chiama DAOFactory.init() prima di launchApp().");
         }
         
         StageManagerGUI stageManager = new StageManagerGUI(primaryStage, daoFactory);

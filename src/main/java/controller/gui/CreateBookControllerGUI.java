@@ -5,9 +5,6 @@ import app.state.StateManager;
 import app.state.SuccessState;
 import bean.BookBean;
 import controller.app.ManageBooksController;
-import dao.CategoryDAO;
-import dao.factory.DAOFactory;
-import exception.DAOException;
 import exception.DuplicateBookException;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -28,8 +25,7 @@ public class CreateBookControllerGUI {
     private static final Logger logger =
             LoggerFactory.getLogger(CreateBookControllerGUI.class);
 
-    private static final String IMAGE_DIR =
-            "src/main/resources/images";
+    private static final String IMAGE_DIR = "src/main/resources/images";
 
     @FXML private TextField titleField;
     @FXML private TextField authorField;
@@ -47,7 +43,6 @@ public class CreateBookControllerGUI {
     private StateManager stateManager;
     private final ManageBooksController appController = new ManageBooksController();
     private File selectedImageFile;
-    private CategoryDAO categoryDAO;
 
     public void setStateManager(StateManager stateManager) {
         this.stateManager = stateManager;
@@ -55,35 +50,34 @@ public class CreateBookControllerGUI {
 
     @FXML
     public void initialize() {
-        try {
-            categoryDAO = DAOFactory.getActiveFactory().getCategoryDAO();
-            loadCategories();
-        } catch (Exception e) {
-            logger.error("Error loading categories", e);
-        }
-
-        try {
-            previewImage.setImage(
-                new Image(getClass().getResourceAsStream("/images/placeholder.png"))
-            );
-        } catch (Exception e) {
-            logger.warn("Placeholder image not found");
-        }
-
+        loadCategories();
+        loadPlaceholderImage();
         allowOnlyNumbers(yearField);
         allowOnlyNumbers(pagesField);
         allowOnlyNumbers(stockField);
         allowDecimal(priceField);
     }
 
-    private void loadCategories() throws DAOException {
-        List<model.Category> categories = categoryDAO.getAllCategories();
-        categoryCombo.getItems().clear();
-        for (model.Category c : categories) {
-            categoryCombo.getItems().add(c.getCategory());
+    private void loadCategories() {
+        try {
+            List<String> categories = appController.getAllCategoryNames();
+            categoryCombo.getItems().clear();
+            categoryCombo.getItems().addAll(categories);
+            if (!categories.isEmpty()) {
+                categoryCombo.getSelectionModel().selectFirst();
+            }
+        } catch (Exception e) {
+            logger.error("Error loading categories", e);
         }
-        if (!categoryCombo.getItems().isEmpty()) {
-            categoryCombo.getSelectionModel().selectFirst();
+    }
+
+    private void loadPlaceholderImage() {
+        try {
+            previewImage.setImage(
+                new Image(getClass().getResourceAsStream("/images/placeholder.png"))
+            );
+        } catch (Exception e) {
+            logger.warn("Placeholder image not found");
         }
     }
 
@@ -92,9 +86,7 @@ public class CreateBookControllerGUI {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Select book image");
         chooser.getExtensionFilters().add(
-            new FileChooser.ExtensionFilter(
-                "Images", "*.png", "*.jpg", "*.jpeg"
-            )
+            new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg")
         );
 
         File file = chooser.showOpenDialog(null);
@@ -113,10 +105,7 @@ public class CreateBookControllerGUI {
 
         try {
             if (selectedImageFile != null) {
-                imageName = copyImageToResources(
-                    selectedImageFile,
-                    titleField.getText()
-                );
+                imageName = copyImageToResources(selectedImageFile, titleField.getText());
             }
 
             BookBean bean = new BookBean();
@@ -145,7 +134,6 @@ public class CreateBookControllerGUI {
                 stateManager,
                 e.getUserFriendlyMessage()
             ));
-
         } catch (Exception e) {
             logger.error("Error creating book", e);
             stateManager.setState(new ErrorState(
@@ -191,7 +179,6 @@ public class CreateBookControllerGUI {
         }
         return true;
     }
-    
 
     @FXML
     private void handleCancel() {

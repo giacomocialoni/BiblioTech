@@ -26,7 +26,7 @@ public class BookDetailController {
     private final WishlistDAO wishlistDAO;
 
     public BookDetailController() {
-        DAOFactory factory = DAOFactory.getActiveFactory();
+        DAOFactory factory = DAOFactory.getInstance();
         this.purchaseFacade = new UserPurchaseFacade();
         this.loanFacade = new UserLoanFacade();
         this.bookDAO = factory.getBookDAO();

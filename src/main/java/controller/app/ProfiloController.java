@@ -33,10 +33,10 @@ public class ProfiloController {
     private final PurchaseDAO purchaseDAO;
 
     public ProfiloController() {
-        this.bookDAO = DAOFactory.getActiveFactory().getBookDAO();
-        this.userDAO = DAOFactory.getActiveFactory().getUserDAO();
-        this.loanDAO = DAOFactory.getActiveFactory().getLoanDAO();
-        this.purchaseDAO = DAOFactory.getActiveFactory().getPurchaseDAO();
+        this.bookDAO = DAOFactory.getInstance().getBookDAO();
+        this.userDAO = DAOFactory.getInstance().getUserDAO();
+        this.loanDAO = DAOFactory.getInstance().getLoanDAO();
+        this.purchaseDAO = DAOFactory.getInstance().getPurchaseDAO();
     }
 
     public UserBean getUser(String email) {

@@ -19,11 +19,11 @@ public class SignInController {
  private final AccountDAO accountDAO;
 
  public SignInController() {
-     this.accountDAO = DAOFactory.getActiveFactory().getAccountDAO();
+     this.accountDAO = DAOFactory.getInstance().getAccountDAO();
  }
 
  public AccountBean signIn(String email, String password, String firstName, String lastName) 
-         throws DAOException, EmailAlreadyRegisteredException {  // ✅ Aggiunta eccezione
+         throws DAOException, EmailAlreadyRegisteredException {  
      
      // Validazione input
      if (email == null || email.isBlank() || password == null || password.isBlank() ||

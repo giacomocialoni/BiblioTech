@@ -16,7 +16,7 @@ public class BachecaController {
     private final PostDAO postDAO;
 
     public BachecaController() {
-        this.postDAO = DAOFactory.getActiveFactory().getPostDAO();
+        this.postDAO = DAOFactory.getInstance().getPostDAO();
     }
 
     public List<PostBean> getAllPostsOrderedByDate() {

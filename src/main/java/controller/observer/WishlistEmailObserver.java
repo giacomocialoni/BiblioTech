@@ -20,7 +20,7 @@ public class WishlistEmailObserver implements WishlistObserver {
 
     // Costruttore usato nell'app
     public WishlistEmailObserver() {
-        this.wishlistDAO = DAOFactory.getActiveFactory().getWishlistDAO();
+        this.wishlistDAO = DAOFactory.getInstance().getWishlistDAO();
         this.emailService = new EmailService();
     }
 

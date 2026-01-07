@@ -21,7 +21,7 @@ public class CatalogoController {
     private final BookDAO bookDAO;
 
     public CatalogoController() {
-        this.bookDAO = DAOFactory.getActiveFactory().getBookDAO();
+        this.bookDAO = DAOFactory.getInstance().getBookDAO();
     }
 
     // ================== READ ==================
