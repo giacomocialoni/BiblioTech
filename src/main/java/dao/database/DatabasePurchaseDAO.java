@@ -23,6 +23,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     private static final String[] PURCHASE_COLUMNS = {
             "id", "user_email", "book_id", "status", "purchase_date", "price"
     };
+    private static final String ALL_COLUMNS = String.join(", ", PURCHASE_COLUMNS);
 
     public DatabasePurchaseDAO(DBConnection dbConnection) {
         this.dbConnection = dbConnection;
@@ -86,7 +87,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     public Purchase getPurchaseById(int purchaseId)
             throws DAOException, RecordNotFoundException {
 
-        String sql = "SELECT " + String.join(", ", PURCHASE_COLUMNS)
+        String sql = "SELECT " + ALL_COLUMNS
                    + " FROM purchases WHERE id = ?";
 
         try (Connection conn = dbConnection.getConnection();
@@ -126,7 +127,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
     @Override
     public List<Purchase> getAllPurchases() throws DAOException {
-        String sql = "SELECT " + String.join(", ", PURCHASE_COLUMNS)
+        String sql = "SELECT " + ALL_COLUMNS
                    + " FROM purchases";
 
         try (Connection conn = dbConnection.getConnection();
@@ -152,7 +153,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
         String sql = """
                 SELECT %s FROM purchases
                 WHERE LOWER(user_email) LIKE ?
-                """.formatted(String.join(", ", PURCHASE_COLUMNS));
+                """.formatted(ALL_COLUMNS);
 
         return search(sql, "%" + searchText.toLowerCase() + "%");
     }
@@ -164,7 +165,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
                 FROM purchases p
                 JOIN books b ON p.book_id = b.id
                 WHERE LOWER(b.title) LIKE ?
-                """.formatted(String.join(", ", PURCHASE_COLUMNS));
+                """.formatted(ALL_COLUMNS);
 
         return search(sql, "%" + searchText.toLowerCase() + "%");
     }
@@ -275,7 +276,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     private List<Purchase> getPurchasesByField(String field, Object value)
             throws DAOException {
 
-        String sql = "SELECT " + String.join(", ", PURCHASE_COLUMNS)
+        String sql = "SELECT " + ALL_COLUMNS
                    + " FROM purchases WHERE " + field + " = ?";
 
         try (Connection conn = dbConnection.getConnection();
