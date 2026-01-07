@@ -23,7 +23,8 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     private static final String[] PURCHASE_COLUMNS = {
             "id", "user_email", "book_id", "status", "purchase_date", "price"
     };
-    private static final String ALL_COLUMNS = String.join(", ", PURCHASE_COLUMNS);
+
+    private static final String COLUMNS_CSV = String.join(", ", PURCHASE_COLUMNS);
 
     public DatabasePurchaseDAO(DBConnection dbConnection) {
         this.dbConnection = dbConnection;
@@ -78,7 +79,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     @Override
     public void rejectPurchase(int purchaseId)
             throws DAOException, RecordNotFoundException {
-        //TODO DELETE
+        updatePurchaseStatus(purchaseId, PurchaseStatus.RESERVED); // o gestisci come "REJECTED" se lo vuoi
     }
 
     /* ============== RECUPERO ============== */
@@ -87,8 +88,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     public Purchase getPurchaseById(int purchaseId)
             throws DAOException, RecordNotFoundException {
 
-        String sql = "SELECT " + ALL_COLUMNS
-                   + " FROM purchases WHERE id = ?";
+        String sql = "SELECT " + COLUMNS_CSV + " FROM purchases WHERE id = ?";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -122,13 +122,12 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
     @Override
     public List<Purchase> getPurchasesByStatus(PurchaseStatus status) throws DAOException {
-        return getPurchasesByField("status", status);
+        return getPurchasesByField("status", status.name());
     }
 
     @Override
     public List<Purchase> getAllPurchases() throws DAOException {
-        String sql = "SELECT " + ALL_COLUMNS
-                   + " FROM purchases";
+        String sql = "SELECT " + COLUMNS_CSV + " FROM purchases";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -150,22 +149,16 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
     @Override
     public List<Purchase> searchPurchasesByUser(String searchText) throws DAOException {
-        String sql = """
-                SELECT %s FROM purchases
-                WHERE LOWER(user_email) LIKE ?
-                """.formatted(ALL_COLUMNS);
+        String sql = "SELECT " + COLUMNS_CSV + " FROM purchases WHERE LOWER(user_email) LIKE ?";
 
         return search(sql, "%" + searchText.toLowerCase() + "%");
     }
 
     @Override
     public List<Purchase> searchPurchasesByBook(String searchText) throws DAOException {
-        String sql = """
-                SELECT p.%s
-                FROM purchases p
-                JOIN books b ON p.book_id = b.id
-                WHERE LOWER(b.title) LIKE ?
-                """.formatted(ALL_COLUMNS);
+        String sql = "SELECT " + COLUMNS_CSV +
+                     " FROM purchases p JOIN books b ON p.book_id = b.id" +
+                     " WHERE LOWER(b.title) LIKE ?";
 
         return search(sql, "%" + searchText.toLowerCase() + "%");
     }
@@ -176,11 +169,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     public boolean hasUserPurchasedBook(String userEmail, int bookId)
             throws DAOException {
 
-        String sql = """
-                SELECT 1 FROM purchases
-                WHERE user_email = ? AND book_id = ? AND status = 'PURCHASED'
-                LIMIT 1
-                """;
+        String sql = "SELECT 1 FROM purchases WHERE user_email = ? AND book_id = ? AND status = 'PURCHASED' LIMIT 1";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -201,10 +190,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     public List<Integer> getPurchasedBookIdsByUser(String userEmail)
             throws DAOException {
 
-        String sql = """
-                SELECT book_id FROM purchases
-                WHERE user_email = ? AND status = 'PURCHASED'
-                """;
+        String sql = "SELECT book_id FROM purchases WHERE user_email = ? AND status = 'PURCHASED'";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -228,10 +214,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
     @Override
     public int countPurchasesByUser(String userEmail) throws DAOException {
-        String sql = """
-                SELECT COUNT(*) FROM purchases
-                WHERE user_email = ? AND status = 'PURCHASED'
-                """;
+        String sql = "SELECT COUNT(*) FROM purchases WHERE user_email = ? AND status = 'PURCHASED'";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -250,11 +233,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
     @Override
     public double getTotalSpentByUser(String userEmail) throws DAOException {
-        String sql = """
-                SELECT COALESCE(SUM(price), 0)
-                FROM purchases
-                WHERE user_email = ? AND status = 'PURCHASED'
-                """;
+        String sql = "SELECT COALESCE(SUM(price), 0) FROM purchases WHERE user_email = ? AND status = 'PURCHASED'";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -276,21 +255,20 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     private List<Purchase> getPurchasesByField(String field, Object value)
             throws DAOException {
 
-        String sql = "SELECT " + ALL_COLUMNS
-                   + " FROM purchases WHERE " + field + " = ?";
+        String sql = "SELECT " + COLUMNS_CSV + " FROM purchases WHERE " + field + " = ?";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setObject(1, value);
 
+            List<Purchase> list = new ArrayList<>();
             try (ResultSet rs = stmt.executeQuery()) {
-                List<Purchase> list = new ArrayList<>();
                 while (rs.next()) {
                     list.add(extractPurchaseFromResultSet(rs));
                 }
-                return list;
             }
+            return list;
 
         } catch (SQLException e) {
             throw new DAOException("Errore recupero acquisti", e);
@@ -315,14 +293,14 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             throw new DAOException("Errore ricerca acquisti", e);
         }
     }
-    
+
     private Purchase extractPurchaseFromResultSet(ResultSet rs) throws SQLException {
         int id = rs.getInt("id");
         String userEmail = rs.getString("user_email");
         int bookId = rs.getInt("book_id");
-        LocalDate statusDate = rs.getDate("status_date") != null ? rs.getDate("status_date").toLocalDate() : null;
+        LocalDate statusDate = rs.getDate("purchase_date") != null ? rs.getDate("purchase_date").toLocalDate() : null;
         PurchaseStatus status = PurchaseStatus.valueOf(rs.getString("status"));
-        
+
         return new Purchase(id, userEmail, bookId, statusDate, status);
     }
 }
