@@ -43,13 +43,13 @@ public class InMemoryLoanDAO implements LoanDAO {
     }
 
     @Override
-    public void updateLoanStatus(int loanId, String status) throws DAOException, RecordNotFoundException {
+    public void updateLoanStatus(int loanId, String status) throws DAOException {
         Loan loan = getLoanById(loanId);
         loan.setStatus(LoanStatus.valueOf(status));
     }
 
     @Override
-    public void deleteLoan(int loanId) throws DAOException, RecordNotFoundException {
+    public void deleteLoan(int loanId) throws DAOException {
         boolean removed = loans.removeIf(l -> l.getId() == loanId);
         
         if (!removed) {
@@ -121,7 +121,7 @@ public class InMemoryLoanDAO implements LoanDAO {
     }
 
     @Override
-    public void acceptLoan(int loanId) throws DAOException, RecordNotFoundException {
+    public void acceptLoan(int loanId) throws DAOException {
         Loan loan = getLoanById(loanId);
         loan.setStatus(LoanStatus.LOANED);
         loan.setLoanedDate(LocalDate.now());
@@ -129,7 +129,7 @@ public class InMemoryLoanDAO implements LoanDAO {
     }
 
     @Override
-    public void returnLoan(int loanId) throws DAOException, RecordNotFoundException {
+    public void returnLoan(int loanId) throws DAOException {
         Loan loan = getLoanById(loanId);
         loan.setStatus(LoanStatus.RETURNED);
     }
@@ -167,7 +167,10 @@ public class InMemoryLoanDAO implements LoanDAO {
         return loans.stream()
                 .filter(l -> l.getStatus() == LoanStatus.LOANED)
                 .filter(l -> l.getReturningDate() != null && l.getReturningDate().isBefore(today))
-                .peek(l -> l.setStatus(LoanStatus.EXPIRED))
+                .map(l -> {
+                    l.setStatus(LoanStatus.EXPIRED);
+                    return l;
+                })
                 .toList();
     }
 }
