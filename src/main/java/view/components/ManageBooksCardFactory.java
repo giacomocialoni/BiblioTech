@@ -45,7 +45,7 @@ public class ManageBooksCardFactory {
         VBox infoBox = createBookInfo(book);
         VBox controlsBox = createStockControls(onIncreaseStock, onDecreaseStock, onRemoveBook);
 
-        HBox card = new HBox(20); // spacing
+        HBox card = new HBox(20);
         card.getStyleClass().add("manage-book-card");
         card.setAlignment(Pos.CENTER_LEFT);
         card.setPadding(new Insets(15));
@@ -60,14 +60,15 @@ public class ManageBooksCardFactory {
         coverImage.setFitHeight(140);
         coverImage.setPreserveRatio(true);
 
-        try (InputStream imageStream = getClass().getResourceAsStream(IMAGE_DIR + book.getImagePath())) {
-
+        String imagePath = IMAGE_DIR + book.getImagePath();
+        try (InputStream imageStream = getClass().getResourceAsStream(imagePath)) {
             Image image;
             if (imageStream != null) {
                 image = new Image(imageStream);
             } else {
-                InputStream defaultStream = getClass().getResourceAsStream(IMAGE_DIR + "default.jpg");
-                image = defaultStream != null ? new Image(defaultStream) : null;
+                try (InputStream defaultStream = getClass().getResourceAsStream(IMAGE_DIR + "default.jpg")) {
+                    image = defaultStream != null ? new Image(defaultStream) : null;
+                }
             }
 
             if (image != null) {
@@ -136,7 +137,6 @@ public class ManageBooksCardFactory {
         controlsBox.setAlignment(Pos.CENTER);
         controlsBox.setPadding(new Insets(10));
 
-        // Spinner quantità
         VBox quantityBox = new VBox(5);
         quantityBox.setAlignment(Pos.CENTER);
         Label quantityLabel = new Label("Quantità:");
@@ -148,7 +148,6 @@ public class ManageBooksCardFactory {
 
         quantityBox.getChildren().addAll(quantityLabel, quantitySpinner);
 
-        // Pulsanti azione stock
         HBox stockButtons = new HBox(10);
         stockButtons.setAlignment(Pos.CENTER);
 
@@ -166,7 +165,6 @@ public class ManageBooksCardFactory {
         separator.getStyleClass().add("separator");
         separator.setPrefWidth(200);
 
-        // Pulsante elimina libro
         Button removeButton = new Button("Elimina Libro");
         removeButton.getStyleClass().add("manage-remove-button");
         removeButton.setMaxWidth(Double.MAX_VALUE);
@@ -177,15 +175,23 @@ public class ManageBooksCardFactory {
     }
 
     /**
-     * Copia un file immagine nella cartella delle risorse (facoltativo se vuoi gestire caricamento custom)
+     * Copia un file immagine nella cartella delle risorse.
      */
     public static String copyImageToResources(File source, String title, String targetDir) throws Exception {
         Files.createDirectories(Path.of(targetDir));
-        String extension = source.getName().substring(source.getName().lastIndexOf('.'));
-        String fileName = title.toLowerCase().replaceAll("[^a-z0-9 ]", "").trim().replace(" ", "_") + extension;
-        Path target = Path.of(targetDir, fileName);
+        String fileName = source.getName();
+        int lastDotIndex = fileName.lastIndexOf('.');
+        String extension = lastDotIndex > 0 ? fileName.substring(lastDotIndex) : "";
+        
+        String sanitizedTitle = title.toLowerCase()
+            .replaceAll("[^a-z0-9 ]", "")
+            .trim()
+            .replace(" ", "_");
+            
+        String finalFileName = sanitizedTitle + extension;
+        Path target = Path.of(targetDir, finalFileName);
         Files.copy(source.toPath(), target, StandardCopyOption.REPLACE_EXISTING);
-        logger.info("Image saved in resources: {}", fileName);
-        return fileName;
+        logger.info("Image saved in resources: {}", finalFileName);
+        return finalFileName;
     }
 }

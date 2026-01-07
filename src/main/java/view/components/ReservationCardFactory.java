@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReservationCardFactory {
 
-    private static final Logger logger = LoggerFactory.getLogger(ManageBooksCardFactory.class);
+    private static final Logger logger = LoggerFactory.getLogger(ReservationCardFactory.class);
     
     public HBox createPurchaseCard(PurchaseBean purchase, BookBean book, Runnable onAccept, Runnable onReject) {
         return createReservationCard(
@@ -45,84 +45,112 @@ public class ReservationCardFactory {
         );
     }
 
-    private HBox createReservationCard(BookBean book, String userEmail, String type, String detail1, String detail2, Runnable onAccept, Runnable onReject) {
-    	String imagePath = "/images/" + book.getImagePath();
-    	InputStream imageStream = getClass().getResourceAsStream(imagePath);
-    	if (imageStream == null) {
-    	    logger.error("Immagine non trovata: " + imagePath);
-    	    imageStream = getClass().getResourceAsStream("/images/default.jpg");
-    	}
+    private HBox createReservationCard(BookBean book, String userEmail, String type, 
+                                     String detail1, String detail2, Runnable onAccept, Runnable onReject) {
+        
+        ImageView coverImage = createCoverImage(book);
+        VBox imageContainer = createImageContainer(coverImage);
+        VBox infoBox = createInfoBox(book, userEmail, type, detail1, detail2, onAccept, onReject);
 
-    	ImageView coverImage = new ImageView(new Image(imageStream));
-    	coverImage.setFitWidth(120);
-    	coverImage.setFitHeight(160);
-    	coverImage.setPreserveRatio(true);
+        HBox card = new HBox(0);
+        card.getStyleClass().add("reservation-card");
+        card.setAlignment(Pos.CENTER_LEFT);
+        card.getChildren().addAll(imageContainer, infoBox);
+        
+        return card;
+    }
 
-    	// clip arrotondato
-    	Rectangle clip = new Rectangle(coverImage.getFitWidth(), coverImage.getFitHeight());
-    	clip.setArcWidth(20);
-    	clip.setArcHeight(20);
-    	coverImage.setClip(clip);
-		
-		// Container per l'immagine
-		VBox imageContainer = new VBox(coverImage);
-		imageContainer.setAlignment(Pos.CENTER);
-		imageContainer.setPadding(new Insets(15));
-		imageContainer.setMinWidth(150);
-		imageContainer.setStyle("-fx-background-color: #faf8f5; -fx-background-radius: 10; -fx-border-radius: 10;");
+    private ImageView createCoverImage(BookBean book) {
+        String imagePath = "/images/" + book.getImagePath();
+        InputStream imageStream = getClass().getResourceAsStream(imagePath);
+        
+        if (imageStream == null) {
+            logger.warn("Immagine non trovata: {}", imagePath);
+            imageStream = getClass().getResourceAsStream("/images/default.jpg");
+        }
+        
+        try (InputStream stream = imageStream) {
+            if (stream != null) {
+                ImageView coverImage = new ImageView(new Image(stream));
+                coverImage.setFitWidth(120);
+                coverImage.setFitHeight(160);
+                coverImage.setPreserveRatio(true);
+                
+                Rectangle clip = new Rectangle(coverImage.getFitWidth(), coverImage.getFitHeight());
+                clip.setArcWidth(20);
+                clip.setArcHeight(20);
+                coverImage.setClip(clip);
+                
+                return coverImage;
+            }
+        } catch (Exception e) {
+            logger.error("Errore caricamento immagine: {}", e.getMessage());
+        }
+        
+        return new ImageView();
+    }
 
-		// Clip anche per il container
-		Rectangle containerClip = new Rectangle(150, 190); // Larghezza e altezza del container
-		containerClip.setArcWidth(20);
-		containerClip.setArcHeight(20);
-		imageContainer.setClip(containerClip);
-		
-		// Informazioni a destra
-		VBox infoBox = new VBox(10);
-		infoBox.setPadding(new Insets(20));
-		infoBox.setAlignment(Pos.TOP_LEFT);
-		
-		Label userLabel = new Label("Utente: " + userEmail);
-		userLabel.getStyleClass().add("reservation-user");
-		
-		Label titleLabel = new Label(book.getTitle());
-		titleLabel.getStyleClass().add("reservation-title");
-		
-		Label authorLabel = new Label("di " + book.getAuthor());
-		authorLabel.getStyleClass().add("reservation-author");
-		
-		Label detail1Label = new Label(detail1);
-		detail1Label.getStyleClass().add("reservation-detail");
-		
-		Label detail2Label = new Label(detail2);
-		detail2Label.getStyleClass().add("reservation-detail");
-		
-		// Pulsanti azione
-		HBox buttonBox = new HBox(15);
-		buttonBox.setAlignment(Pos.CENTER_LEFT);
-		
-		Button acceptButton = new Button(type);
-		acceptButton.getStyleClass().add("buy-button");
-		acceptButton.setOnAction(e -> onAccept.run());
-		
-		Button rejectButton = new Button("Rifiuta");
-		rejectButton.getStyleClass().add("borrow-button");
-		rejectButton.setOnAction(e -> onReject.run());
-		
-		buttonBox.getChildren().addAll(acceptButton, rejectButton);
-		
-		// Assembla info box
-		infoBox.getChildren().addAll(
-		userLabel, titleLabel, authorLabel, 
-		detail1Label, detail2Label, buttonBox
-		);
-		
-		// Card principale
-		HBox card = new HBox(0);
-		card.getStyleClass().add("reservation-card");
-		card.setAlignment(Pos.CENTER_LEFT);
-		card.getChildren().addAll(imageContainer, infoBox);
-		
-		return card;
-		}
+    private VBox createImageContainer(ImageView coverImage) {
+        VBox imageContainer = new VBox(coverImage);
+        imageContainer.setAlignment(Pos.CENTER);
+        imageContainer.setPadding(new Insets(15));
+        imageContainer.setMinWidth(150);
+        imageContainer.setStyle("-fx-background-color: #faf8f5; -fx-background-radius: 10; -fx-border-radius: 10;");
+
+        Rectangle containerClip = new Rectangle(150, 190);
+        containerClip.setArcWidth(20);
+        containerClip.setArcHeight(20);
+        imageContainer.setClip(containerClip);
+        
+        return imageContainer;
+    }
+
+    private VBox createInfoBox(BookBean book, String userEmail, String type, 
+                             String detail1, String detail2, Runnable onAccept, Runnable onReject) {
+        
+        VBox infoBox = new VBox(10);
+        infoBox.setPadding(new Insets(20));
+        infoBox.setAlignment(Pos.TOP_LEFT);
+        
+        Label userLabel = new Label("Utente: " + userEmail);
+        userLabel.getStyleClass().add("reservation-user");
+        
+        Label titleLabel = new Label(book.getTitle());
+        titleLabel.getStyleClass().add("reservation-title");
+        
+        Label authorLabel = new Label("di " + book.getAuthor());
+        authorLabel.getStyleClass().add("reservation-author");
+        
+        Label detail1Label = new Label(detail1);
+        detail1Label.getStyleClass().add("reservation-detail");
+        
+        Label detail2Label = new Label(detail2);
+        detail2Label.getStyleClass().add("reservation-detail");
+        
+        HBox buttonBox = createButtonBox(type, onAccept, onReject);
+        
+        infoBox.getChildren().addAll(
+            userLabel, titleLabel, authorLabel, 
+            detail1Label, detail2Label, buttonBox
+        );
+        
+        return infoBox;
+    }
+
+    private HBox createButtonBox(String type, Runnable onAccept, Runnable onReject) {
+        HBox buttonBox = new HBox(15);
+        buttonBox.setAlignment(Pos.CENTER_LEFT);
+        
+        Button acceptButton = new Button(type);
+        acceptButton.getStyleClass().add("buy-button");
+        acceptButton.setOnAction(e -> onAccept.run());
+        
+        Button rejectButton = new Button("Rifiuta");
+        rejectButton.getStyleClass().add("borrow-button");
+        rejectButton.setOnAction(e -> onReject.run());
+        
+        buttonBox.getChildren().addAll(acceptButton, rejectButton);
+        
+        return buttonBox;
+    }
 }
