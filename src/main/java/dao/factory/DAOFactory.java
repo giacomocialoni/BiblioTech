@@ -7,7 +7,7 @@ public abstract class DAOFactory {
 
     private static DAOFactory instance;
 
-    public BookDAO bookDAO;
+    protected BookDAO bookDAO;
     protected CategoryDAO categoryDAO;
     protected PostDAO postDAO;
     protected AccountDAO accountDAO;
