@@ -16,10 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.function.IntConsumer;
 
 public class ManageBooksCardFactory {
@@ -172,26 +168,5 @@ public class ManageBooksCardFactory {
 
         controlsBox.getChildren().addAll(quantityBox, stockButtons, separator, removeButton);
         return controlsBox;
-    }
-
-    /**
-     * Copia un file immagine nella cartella delle risorse.
-     */
-    public static String copyImageToResources(File source, String title, String targetDir) throws Exception {
-        Files.createDirectories(Path.of(targetDir));
-        String fileName = source.getName();
-        int lastDotIndex = fileName.lastIndexOf('.');
-        String extension = lastDotIndex > 0 ? fileName.substring(lastDotIndex) : "";
-        
-        String sanitizedTitle = title.toLowerCase()
-            .replaceAll("[^a-z0-9 ]", "")
-            .trim()
-            .replace(" ", "_");
-            
-        String finalFileName = sanitizedTitle + extension;
-        Path target = Path.of(targetDir, finalFileName);
-        Files.copy(source.toPath(), target, StandardCopyOption.REPLACE_EXISTING);
-        logger.info("Image saved in resources: {}", finalFileName);
-        return finalFileName;
     }
 }
