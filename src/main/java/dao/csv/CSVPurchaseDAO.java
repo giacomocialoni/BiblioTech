@@ -17,6 +17,7 @@ public class CSVPurchaseDAO implements PurchaseDAO {
     
     private static final String FILE_PATH = "src/main/resources/data/purchases.csv";
     private static final String[] COLUMNS = {"id", "user_email", "book_id", "status", "status_date"};
+    private static final String CSV_HEADER = "id,user_email,book_id,status,status_date";
     
     @Override
     public void addPurchase(String userEmail, int bookId) throws DAOException {
@@ -28,8 +29,8 @@ public class CSVPurchaseDAO implements PurchaseDAO {
                     StandardOpenOption.CREATE,
                     StandardOpenOption.APPEND)) {
                 
-                if (!fileExists || Files.size(path) == 0) {
-                    writer.write(String.join(",", COLUMNS));
+            	if (!fileExists || Files.size(path) == 0) {
+                    writer.write(CSV_HEADER);
                     writer.newLine();
                 }
                 
@@ -160,7 +161,10 @@ public class CSVPurchaseDAO implements PurchaseDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+        	String header = reader.readLine();
+            if (header == null || !header.trim().equals(CSV_HEADER)) {
+                throw new DAOException("File CSV acquisti non valido: header mancante o non corretto");
+            }
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {

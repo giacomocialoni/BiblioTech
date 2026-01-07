@@ -16,6 +16,7 @@ public class CSVPostDAO implements PostDAO {
     
     private static final String FILE_PATH = "src/main/resources/data/posts.csv";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final String CSV_HEADER = "user_fk,title,content,post_date";
     
     @Override
     public List<Post> getAllPostsOrderedByDate() throws DAOException {
@@ -27,7 +28,10 @@ public class CSVPostDAO implements PostDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+        	String header = reader.readLine();
+            if (header == null || !header.trim().equals(CSV_HEADER)) {
+                throw new DAOException("File CSV post non valido: header mancante o non corretto");
+            }
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {

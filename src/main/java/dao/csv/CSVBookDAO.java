@@ -19,6 +19,7 @@ public class CSVBookDAO implements BookDAO {
         "id", "title", "author", "category", "year", "publisher", 
         "pages", "isbn", "stock", "plot", "image_path", "price"
     };
+    private static final String CSV_HEADER = "id,title,author,category,year,publisher,pages,isbn,stock,plot,image_path,price";
     
     private final List<Book> books;
     
@@ -224,7 +225,10 @@ public class CSVBookDAO implements BookDAO {
     }
     
     private void loadFromReader(BufferedReader reader) throws IOException {
-        reader.readLine(); // Skip header
+    	String header = reader.readLine();
+        if (header == null || !header.trim().equals(CSV_HEADER)) {
+            throw new IOException("File CSV dei libri non valido: header mancante o non corretto");
+        }
         
         String line;
         while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {

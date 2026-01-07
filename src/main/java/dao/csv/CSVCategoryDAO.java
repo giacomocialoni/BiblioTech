@@ -14,6 +14,7 @@ import java.util.List;
 public class CSVCategoryDAO implements CategoryDAO {
     
     private static final String FILE_PATH = "src/main/resources/data/categories.csv";
+    private static final String CSV_HEADER = "category";
     
     @Override
     public List<Category> getAllCategories() throws DAOException {
@@ -25,7 +26,10 @@ public class CSVCategoryDAO implements CategoryDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+        	String header = reader.readLine();
+            if (header == null || !header.trim().equals(CSV_HEADER)) {
+                throw new DAOException("File CSV categorie non valido: header mancante o non corretto");
+            }
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {

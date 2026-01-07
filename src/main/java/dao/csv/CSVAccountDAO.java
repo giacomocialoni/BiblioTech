@@ -16,6 +16,7 @@ import java.util.List;
 public class CSVAccountDAO implements AccountDAO {
     
     private static final String FILE_PATH = "src/main/resources/data/users.csv";
+    private static final String CSV_HEADER = "email,password,first_name,last_name,role";
     
     @Override
     public Account login(String email, String password) throws DAOException, RecordNotFoundException {
@@ -25,7 +26,10 @@ public class CSVAccountDAO implements AccountDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+        	String header = reader.readLine();
+            if (header == null || !header.trim().equals(CSV_HEADER)) {
+                throw new DAOException("File CSV non valido: header mancante o non corretto");
+            }
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
@@ -69,7 +73,10 @@ public class CSVAccountDAO implements AccountDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+        	String header = reader.readLine();
+            if (header == null || !header.trim().equals(CSV_HEADER)) {
+                throw new DAOException("File CSV non valido: header mancante o non corretto");
+            }
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
@@ -95,7 +102,10 @@ public class CSVAccountDAO implements AccountDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
+        	String header = reader.readLine();
+            if (header == null || !header.trim().equals(CSV_HEADER)) {
+                throw new DAOException("File CSV non valido: header mancante o non corretto");
+            }
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {

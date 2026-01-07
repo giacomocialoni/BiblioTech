@@ -14,7 +14,7 @@ import java.util.List;
 public class CSVWishlistDAO implements WishlistDAO {
     
     private static final String FILE_PATH = "src/main/resources/data/wishlist.csv";
-    private static final String[] COLUMNS = {"user_email", "book_id"};
+    private static final String CSV_HEADER = "user_email,book_id";
     
     @Override
     public void addToWishlist(String userEmail, int bookId) throws DAOException {
@@ -23,7 +23,7 @@ public class CSVWishlistDAO implements WishlistDAO {
                 StandardOpenOption.APPEND)) {
             
             if (!Files.exists(Paths.get(FILE_PATH)) || Files.size(Paths.get(FILE_PATH)) == 0) {
-                writer.write(String.join(",", COLUMNS));
+                writer.write(CSV_HEADER);
                 writer.newLine();
             }
             
@@ -34,6 +34,35 @@ public class CSVWishlistDAO implements WishlistDAO {
         } catch (IOException e) {
             throw new DAOException("Errore durante l'aggiunta alla wishlist per utente " + userEmail, e);
         }
+    }
+    
+    @Override
+    public boolean isInWishlist(String userEmail, int bookId) throws DAOException {
+        Path path = Paths.get(FILE_PATH);
+        if (!Files.exists(path)) {
+            return false;
+        }
+        
+        try (BufferedReader reader = Files.newBufferedReader(path)) {
+            // Verifica header
+            String header = reader.readLine();
+            if (header == null || !header.trim().equals(CSV_HEADER)) {
+                throw new DAOException("File CSV wishlist non valido: header mancante o non corretto");
+            }
+            
+            String line;
+            while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
+                String[] fields = line.split(",");
+                if (fields[0].equals(userEmail) && Integer.parseInt(fields[1]) == bookId) {
+                    return true;
+                }
+            }
+            
+        } catch (IOException e) {
+            throw new DAOException("Errore durante il controllo della wishlist per utente " + userEmail, e);
+        }
+        
+        return false;
     }
     
     @Override
@@ -76,31 +105,6 @@ public class CSVWishlistDAO implements WishlistDAO {
         } catch (IOException e) {
             throw new DAOException("Errore durante la scrittura del file wishlist dopo rimozione", e);
         }
-    }
-    
-    @Override
-    public boolean isInWishlist(String userEmail, int bookId) throws DAOException {
-        Path path = Paths.get(FILE_PATH);
-        if (!Files.exists(path)) {
-            return false;
-        }
-        
-        try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // Skip header
-            
-            String line;
-            while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
-                String[] fields = line.split(",");
-                if (fields[0].equals(userEmail) && Integer.parseInt(fields[1]) == bookId) {
-                    return true;
-                }
-            }
-            
-        } catch (IOException e) {
-            throw new DAOException("Errore durante il controllo della wishlist per utente " + userEmail, e);
-        }
-        
-        return false;
     }
     
     @Override
