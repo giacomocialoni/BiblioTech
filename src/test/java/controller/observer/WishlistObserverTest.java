@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import model.Book;
 
-public class WishlistObserverTest {
+class WishlistObserverTest {
 
     @Test
     void testObserverIsNotified() {

@@ -12,9 +12,8 @@ import model.Wishlist;
 import service.EmailService;
 import dao.WishlistDAO;
 import exception.DAOException;
-import exception.RecordNotFoundException;
 
-public class WishlistEmailObserverTest {
+class WishlistEmailObserverTest {
 
     // Fake email service che salva le email inviate
     static class FakeEmailService extends EmailService {
@@ -59,7 +58,7 @@ public class WishlistEmailObserverTest {
         }
 
         @Override
-        public List<Wishlist> getWishlistByUser(String userEmail) throws DAOException, RecordNotFoundException {
+        public List<Wishlist> getWishlistByUser(String userEmail) throws DAOException {
             // do nothing
             return null;
         }

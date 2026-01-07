@@ -10,7 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import utils.LoanResult;
 
-public class UserLoanFacadeTest {
+class UserLoanFacadeTest {
 
     private UserLoanFacade facade;
     private Session session;

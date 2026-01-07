@@ -9,7 +9,7 @@ import model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class AdminLoanFacadeTest {
+class AdminLoanFacadeTest {
 
     private AdminLoanFacade facade;
     private Session session;
