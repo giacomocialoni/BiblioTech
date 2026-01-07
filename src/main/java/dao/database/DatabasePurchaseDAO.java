@@ -11,15 +11,23 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DatabasePurchaseDAO implements PurchaseDAO {
 
-    private static final org.slf4j.Logger LOGGER =
-            org.slf4j.LoggerFactory.getLogger(DatabasePurchaseDAO.class);
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(DatabasePurchaseDAO.class);
 
     private final DBConnection dbConnection;
 
+    /* ======================= CONSTANTS ======================= */
+
+    private static final String COL_BOOK_ID = "book_id";
+    private static final String SELECT_PREFIX = "SELECT ";
+
     private static final String[] PURCHASE_COLUMNS = {
-            "id", "user_email", "book_id", "status", "status_date"
+            "id", "user_email", COL_BOOK_ID, "status", "status_date"
     };
 
     private static final String PURCHASE_COLUMNS_JOINED =
@@ -28,19 +36,23 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     /* ======================= SQL ======================= */
 
     private static final String SELECT_BY_ID =
-            "SELECT " + PURCHASE_COLUMNS_JOINED + " FROM purchases WHERE id = ?";
+            SELECT_PREFIX + PURCHASE_COLUMNS_JOINED + " FROM purchases WHERE id = ?";
 
     private static final String SELECT_BY_USER =
-            "SELECT " + PURCHASE_COLUMNS_JOINED + " FROM purchases WHERE user_email = ? ORDER BY status_date DESC";
+            SELECT_PREFIX + PURCHASE_COLUMNS_JOINED +
+            " FROM purchases WHERE user_email = ? ORDER BY status_date DESC";
 
     private static final String SELECT_BY_BOOK =
-            "SELECT " + PURCHASE_COLUMNS_JOINED + " FROM purchases WHERE book_id = ? ORDER BY status_date DESC";
+            SELECT_PREFIX + PURCHASE_COLUMNS_JOINED +
+            " FROM purchases WHERE " + COL_BOOK_ID + " = ? ORDER BY status_date DESC";
 
     private static final String SELECT_BY_STATUS =
-            "SELECT " + PURCHASE_COLUMNS_JOINED + " FROM purchases WHERE status = ? ORDER BY status_date DESC";
+            SELECT_PREFIX + PURCHASE_COLUMNS_JOINED +
+            " FROM purchases WHERE status = ? ORDER BY status_date DESC";
 
     private static final String SELECT_ALL =
-            "SELECT " + PURCHASE_COLUMNS_JOINED + " FROM purchases ORDER BY status_date DESC";
+            SELECT_PREFIX + PURCHASE_COLUMNS_JOINED +
+            " FROM purchases ORDER BY status_date DESC";
 
     private static final String INSERT_PURCHASE =
             "INSERT INTO purchases (user_email, book_id, status, status_date) VALUES (?, ?, 'RESERVED', ?)";
@@ -52,10 +64,10 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             "DELETE FROM purchases WHERE id = ?";
 
     private static final String CHECK_PURCHASED =
-            "SELECT 1 FROM purchases WHERE user_email = ? AND book_id = ? AND status = 'PURCHASED'";
+            SELECT_PREFIX + "1 FROM purchases WHERE user_email = ? AND book_id = ? AND status = 'PURCHASED'";
 
     private static final String COUNT_PURCHASES =
-            "SELECT COUNT(*) FROM purchases WHERE user_email = ? AND status = 'PURCHASED'";
+            SELECT_PREFIX + "COUNT(*) FROM purchases WHERE user_email = ? AND status = 'PURCHASED'";
 
     private static final String TOTAL_SPENT = """
         SELECT SUM(b.price)
@@ -81,29 +93,42 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             stmt.executeUpdate();
 
         } catch (SQLException e) {
+            LOGGER.error("Errore inserimento acquisto", e);
             throw new DAOException("Errore inserimento acquisto", e);
         }
     }
 
     @Override
     public Purchase getPurchaseById(int purchaseId) throws DAOException {
-        return executeSinglePurchaseQuery(SELECT_BY_ID, stmt -> stmt.setInt(1, purchaseId),
-                "Acquisto con ID " + purchaseId + " non trovato");
+        return executeSinglePurchaseQuery(
+                SELECT_BY_ID,
+                stmt -> stmt.setInt(1, purchaseId),
+                "Acquisto con ID " + purchaseId + " non trovato"
+        );
     }
 
     @Override
     public List<Purchase> getPurchasesByUser(String userEmail) throws DAOException {
-        return executePurchaseListQuery(SELECT_BY_USER, stmt -> stmt.setString(1, userEmail));
+        return executePurchaseListQuery(
+                SELECT_BY_USER,
+                stmt -> stmt.setString(1, userEmail)
+        );
     }
 
     @Override
     public List<Purchase> getPurchasesByBook(int bookId) throws DAOException {
-        return executePurchaseListQuery(SELECT_BY_BOOK, stmt -> stmt.setInt(1, bookId));
+        return executePurchaseListQuery(
+                SELECT_BY_BOOK,
+                stmt -> stmt.setInt(1, bookId)
+        );
     }
 
     @Override
     public List<Purchase> getPurchasesByStatus(String status) throws DAOException {
-        return executePurchaseListQuery(SELECT_BY_STATUS, stmt -> stmt.setString(1, status));
+        return executePurchaseListQuery(
+                SELECT_BY_STATUS,
+                stmt -> stmt.setString(1, status)
+        );
     }
 
     @Override
@@ -125,6 +150,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             }
 
         } catch (SQLException e) {
+            LOGGER.error("Errore aggiornamento stato acquisto {}", purchaseId, e);
             throw new DAOException("Errore aggiornamento stato acquisto", e);
         }
     }
@@ -141,6 +167,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             }
 
         } catch (SQLException e) {
+            LOGGER.error("Errore eliminazione acquisto {}", purchaseId, e);
             throw new DAOException("Errore eliminazione acquisto", e);
         }
     }
@@ -155,6 +182,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             return stmt.executeQuery().next();
 
         } catch (SQLException e) {
+            LOGGER.error("Errore controllo acquisto", e);
             throw new DAOException("Errore controllo acquisto", e);
         }
     }
@@ -169,6 +197,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             return rs.next() ? rs.getInt(1) : 0;
 
         } catch (SQLException e) {
+            LOGGER.error("Errore conteggio acquisti", e);
             throw new DAOException("Errore conteggio acquisti", e);
         }
     }
@@ -183,14 +212,15 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             return rs.next() ? rs.getDouble(1) : 0.0;
 
         } catch (SQLException e) {
+            LOGGER.error("Errore calcolo spesa totale", e);
             throw new DAOException("Errore calcolo spesa totale", e);
         }
     }
 
     /* ======================= HELPERS ======================= */
 
-    private List<Purchase> executePurchaseListQuery(String sql, StatementFiller filler)
-            throws DAOException {
+    private List<Purchase> executePurchaseListQuery(
+            String sql, StatementFiller filler) throws DAOException {
 
         List<Purchase> list = new ArrayList<>();
 
@@ -208,13 +238,14 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             return list;
 
         } catch (SQLException e) {
+            LOGGER.error("Errore query acquisti", e);
             throw new DAOException("Errore query acquisti", e);
         }
     }
 
-    private Purchase executeSinglePurchaseQuery(String sql,
-                                                StatementFiller filler,
-                                                String notFoundMsg) throws DAOException {
+    private Purchase executeSinglePurchaseQuery(
+            String sql, StatementFiller filler, String notFoundMsg)
+            throws DAOException {
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -228,15 +259,18 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             throw new RecordNotFoundException(notFoundMsg);
 
         } catch (SQLException e) {
+            LOGGER.error("Errore recupero acquisto", e);
             throw new DAOException("Errore recupero acquisto", e);
         }
     }
 
-    private Purchase extractPurchaseFromResultSet(ResultSet rs) throws SQLException {
+    private Purchase extractPurchaseFromResultSet(ResultSet rs)
+            throws SQLException {
+
         return new Purchase(
                 rs.getInt("id"),
                 rs.getString("user_email"),
-                rs.getInt("book_id"),
+                rs.getInt(COL_BOOK_ID),
                 rs.getDate("status_date").toLocalDate(),
                 PurchaseStatus.valueOf(rs.getString("status"))
         );
