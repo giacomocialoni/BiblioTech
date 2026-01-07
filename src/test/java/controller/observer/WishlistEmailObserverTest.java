@@ -71,10 +71,11 @@ class WishlistEmailObserverTest {
 
         WishlistEmailObserver observer = new WishlistEmailObserver(mockDAO, fakeEmailService);
 
-        Book book = new Book();
-        book.setId(123);
-        book.setTitle("Il Signore degli Anelli");
-        book.setAuthor("J.R.R. Tolkien");
+        Book book = Book.builder()
+                .id(123)
+                .title("Il Signore degli Anelli")
+                .author("J.R.R. Tolkien")
+                .build();
 
         observer.onBookAvailable(book);
 

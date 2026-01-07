@@ -18,9 +18,10 @@ class WishlistObserverTest {
 
         observable.addObserver(mockObserver);
 
-        Book fakeBook = new Book();
-        fakeBook.setId(1);
-        fakeBook.setStock(3);
+        Book fakeBook = Book.builder()
+                .id(1)
+                .stock(3)
+                .build();
 
         observable.notifyBookAvailable(fakeBook);
 

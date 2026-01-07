@@ -244,20 +244,20 @@ public class CSVBookDAO implements BookDAO {
     }
     
     private void createSampleData() {
-        books.add(new Book(
-                1,
-                "Clean Code",
-                "Robert C. Martin",
-                "Programming",
-                2008,
-                "Prentice Hall",
-                464,
-                "9780132350884",
-                5,
-                "A Handbook of Agile Software Craftsmanship",
-                null,
-                39.99
-        ));
+    	books.add(Book.builder()
+    		    .id(1)
+    		    .title("Clean Code")
+    		    .author("Robert C. Martin")
+    		    .category("Programming")
+    		    .year(2008)
+    		    .publisher("Prentice Hall")
+    		    .pages(464)
+    		    .isbn("9780132350884")
+    		    .stock(5)
+    		    .plot("A Handbook of Agile Software Craftsmanship")
+    		    .imagePath(null)  // o potresti ometterlo se il builder gestisce default
+    		    .price(39.99)
+    		    .build());
     }
     
     private void saveBooks() throws DAOException {
@@ -289,20 +289,20 @@ public class CSVBookDAO implements BookDAO {
         }
         
         try {
-            return new Book(
-                Integer.parseInt(fields.get(0).trim()),
-                fields.get(1).trim(),
-                fields.get(2).trim(),
-                fields.get(3).trim(),
-                Integer.parseInt(fields.get(4).trim()),
-                fields.get(5).trim(),
-                Integer.parseInt(fields.get(6).trim()),
-                fields.get(7).trim(),
-                Integer.parseInt(fields.get(8).trim()),
-                fields.get(9).trim(),
-                fields.get(10).trim(),
-                Double.parseDouble(fields.get(11).trim())
-            );
+            return Book.builder()
+            	    .id(1)
+            	    .title("Il Signore degli Anelli")
+            	    .author("J.R.R. Tolkien")
+            	    .category("Fantasy")
+            	    .year(1954)
+            	    .publisher("Allen & Unwin")
+            	    .pages(1178)
+            	    .isbn("978-8845292614")
+            	    .stock(10)
+            	    .plot("Un anello per domarli tutti...")
+            	    .imagePath("lotr.jpg")
+            	    .price(25.99)
+            	    .build();
         } catch (NumberFormatException e) {
             return null;
         }

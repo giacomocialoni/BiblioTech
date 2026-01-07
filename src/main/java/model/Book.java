@@ -3,7 +3,6 @@ package model;
 import java.util.Objects;
 
 public class Book {
-
     private int id;
     private String title;
     private String author;
@@ -17,37 +16,89 @@ public class Book {
     private String imagePath;
     private double price;
 
-    public Book() {}
+    private Book() {}
 
-    public Book(
-            int id,
-            String title,
-            String author,
-            String category,
-            int year,
-            String publisher,
-            int pages,
-            String isbn,
-            int stock,
-            String plot,
-            String imagePath,
-            double price
-    ) {
-        this.id = id;
-        this.title = title;
-        this.author = author;
-        this.category = category;
-        this.year = year;
-        this.publisher = publisher;
-        this.pages = pages;
-        this.isbn = isbn;
-        this.stock = stock;
-        this.plot = plot;
-        this.imagePath = imagePath;
-        this.price = price;
+    // Builder class
+    public static class Builder {
+        private final Book book = new Book();
+        
+        public Builder id(int id) {
+            book.id = id;
+            return this;
+        }
+        
+        public Builder title(String title) {
+            book.title = title;
+            return this;
+        }
+        
+        public Builder author(String author) {
+            book.author = author;
+            return this;
+        }
+        
+        public Builder category(String category) {
+            book.category = category;
+            return this;
+        }
+        
+        public Builder year(int year) {
+            book.year = year;
+            return this;
+        }
+        
+        public Builder publisher(String publisher) {
+            book.publisher = publisher;
+            return this;
+        }
+        
+        public Builder pages(int pages) {
+            book.pages = pages;
+            return this;
+        }
+        
+        public Builder isbn(String isbn) {
+            book.isbn = isbn;
+            return this;
+        }
+        
+        public Builder stock(int stock) {
+            book.stock = stock;
+            return this;
+        }
+        
+        public Builder plot(String plot) {
+            book.plot = plot;
+            return this;
+        }
+        
+        public Builder imagePath(String imagePath) {
+            book.imagePath = imagePath;
+            return this;
+        }
+        
+        public Builder price(double price) {
+            book.price = price;
+            return this;
+        }
+        
+        public Book build() {
+            // Validazioni opzionali
+            if (book.title == null || book.title.isBlank()) {
+                throw new IllegalArgumentException("Title is required");
+            }
+            if (book.author == null || book.author.isBlank()) {
+                throw new IllegalArgumentException("Author is required");
+            }
+            return book;
+        }
+    }
+    
+    public static Builder builder() {
+        return new Builder();
     }
 
-    // --- GETTER & SETTER ---
+    // --- GETTER & SETTER (rimangono uguali) ---
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 

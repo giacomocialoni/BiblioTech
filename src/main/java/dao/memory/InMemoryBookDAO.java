@@ -32,53 +32,50 @@ public class InMemoryBookDAO implements BookDAO {
        ========================= */
 
     private void initializeSampleBooks() {
-        // Avventura
-        books.add(new Book(
-                1,
-                "Into the Wild",
-                "Jon Krakauer",
-                "Adventure",
-                1996,
-                "Villard",
-                224,
-                "9780679428502",
-                4,
-                "The true story of a young man who abandoned everything to live in the Alaskan wilderness.",
-                null,
-                14.99
-        ));
+    	// Aventura
+    	books.add(Book.builder()
+    	    .id(1)
+    	    .title("Into the Wild")
+    	    .author("Jon Krakauer")
+    	    .category("Adventure")
+    	    .year(1996)
+    	    .publisher("Villard")
+    	    .pages(224)
+    	    .isbn("9780679428502")
+    	    .stock(4)
+    	    .plot("The true story of a young man who abandoned everything to live in the Alaskan wilderness.")
+    	    .price(14.99)
+    	    .build());
 
-        // Biografia
-        books.add(new Book(
-                2,
-                "Steve Jobs",
-                "Walter Isaacson",
-                "Biography",
-                2011,
-                "Simon & Schuster",
-                656,
-                "9781451648539",
-                3,
-                "The authorized self-titled biography of Apple co-founder Steve Jobs.",
-                null,
-                19.99
-        ));
+    	// Biografia
+    	books.add(Book.builder()
+    	    .id(2)
+    	    .title("Steve Jobs")
+    	    .author("Walter Isaacson")
+    	    .category("Biography")
+    	    .year(2011)
+    	    .publisher("Simon & Schuster")
+    	    .pages(656)
+    	    .isbn("9781451648539")
+    	    .stock(3)
+    	    .plot("The authorized self-titled biography of Apple co-founder Steve Jobs.")
+    	    .price(19.99)
+    	    .build());
 
-        // Narrativo
-        books.add(new Book(
-                3,
-                "The Old Man and the Sea",
-                "Ernest Hemingway",
-                "Narrative",
-                1952,
-                "Charles Scribner's Sons",
-                128,
-                "9780684801223",
-                6,
-                "A short novel about an aging fisherman's struggle with a giant marlin.",
-                null,
-                11.99
-        ));
+    	// Narrativo
+    	books.add(Book.builder()
+    	    .id(3)
+    	    .title("The Old Man and the Sea")
+    	    .author("Ernest Hemingway")
+    	    .category("Narrative")
+    	    .year(1952)
+    	    .publisher("Charles Scribner's Sons")
+    	    .pages(128)
+    	    .isbn("9780684801223")
+    	    .stock(6)
+    	    .plot("A short novel about an aging fisherman's struggle with a giant marlin.")
+    	    .price(11.99)
+    	    .build());
     }
 
     /* =========================

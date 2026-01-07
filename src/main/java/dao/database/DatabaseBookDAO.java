@@ -285,20 +285,20 @@ public class DatabaseBookDAO implements BookDAO {
     }
 
     private Book extractBookFromResultSet(ResultSet rs) throws SQLException {
-        return new Book(
-                rs.getInt("id"),
-                rs.getString(TITLE),
-                rs.getString("author"),
-                rs.getString("category"),
-                rs.getInt("year"),
-                rs.getString("publisher"),
-                rs.getInt("pages"),
-                rs.getString("isbn"),
-                rs.getInt("stock"),
-                rs.getString("plot"),
-                rs.getString("image_path"),
-                rs.getDouble("price")
-        );
+        return Book.builder()
+            .id(rs.getInt("id"))
+            .title(rs.getString(TITLE))
+            .author(rs.getString("author"))
+            .category(rs.getString("category"))
+            .year(rs.getInt("year"))
+            .publisher(rs.getString("publisher"))
+            .pages(rs.getInt("pages"))
+            .isbn(rs.getString("isbn"))
+            .stock(rs.getInt("stock"))
+            .plot(rs.getString("plot"))
+            .imagePath(rs.getString("image_path"))
+            .price(rs.getDouble("price"))
+            .build();
     }
 
     private void fillBookPreparedStatement(PreparedStatement stmt, Book book) throws SQLException {

@@ -1,15 +1,15 @@
 package model;
 
 public class Category {
-	private String category;
+	private String categoryName;
 
     public Category() {}
 
-    public Category(String category) {
-        this.category = category;
+    public Category(String categoryName) {
+        this.categoryName = categoryName;
     }
     
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
+    public String getCategory() { return categoryName; }
+    public void setCategory(String category) { this.categoryName = category; }
 
 }

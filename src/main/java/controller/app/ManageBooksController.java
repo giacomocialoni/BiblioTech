@@ -178,19 +178,19 @@ public class ManageBooksController {
     }
     
     private Book mapBeanToModel(BookBean bean) {
-        return new Book(
-                0, // id generato dal DB
-                bean.getTitle(),
-                bean.getAuthor(),
-                bean.getCategory(),
-                bean.getYear(),
-                bean.getPublisher(),
-                bean.getPages(),
-                bean.getIsbn(),
-                bean.getStock(),
-                bean.getPlot(),
-                bean.getImagePath(),
-                bean.getPrice()
-        );
+        return Book.builder()
+            .id(0) // id generato dal DB
+            .title(bean.getTitle())
+            .author(bean.getAuthor())
+            .category(bean.getCategory())
+            .year(bean.getYear())
+            .publisher(bean.getPublisher())
+            .pages(bean.getPages())
+            .isbn(bean.getIsbn())
+            .stock(bean.getStock())
+            .plot(bean.getPlot())
+            .imagePath(bean.getImagePath())
+            .price(bean.getPrice())
+            .build();
     }
 }
