@@ -9,12 +9,23 @@ import utils.PurchaseStatus;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class InMemoryPurchaseDAO implements PurchaseDAO {
 
+    private static InMemoryPurchaseDAO instance = null;
     private final List<Purchase> purchases = new ArrayList<>();
     private int nextId = 1;
+
+    public InMemoryPurchaseDAO() {
+        // Costruttore vuoto
+    }
+
+    public static InMemoryPurchaseDAO getInstance() {
+        if (instance == null) {
+            instance = new InMemoryPurchaseDAO();
+        }
+        return instance;
+    }
 
     @Override
     public void addPurchase(String userEmail, int bookId) throws DAOException {
@@ -29,7 +40,8 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
     }
 
     @Override
-    public void updatePurchaseStatus(int purchaseId, PurchaseStatus status) throws DAOException, RecordNotFoundException {
+    public void updatePurchaseStatus(int purchaseId, PurchaseStatus status) 
+            throws DAOException, RecordNotFoundException {
         Purchase purchase = getPurchaseById(purchaseId);
         purchase.setStatus(status);
         purchase.setStatusDate(LocalDate.now());
@@ -37,19 +49,16 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
 
     @Override
     public void rejectPurchase(int purchaseId) throws DAOException, RecordNotFoundException {
-        Optional<Purchase> purchaseToRemove = purchases.stream()
-                .filter(p -> p.getId() == purchaseId)
-                .findFirst();
+        boolean removed = purchases.removeIf(p -> p.getId() == purchaseId);
         
-        if (purchaseToRemove.isPresent()) {
-            purchases.remove(purchaseToRemove.get());
-        } else {
+        if (!removed) {
             throw new RecordNotFoundException("Acquisto con ID " + purchaseId + " non trovato");
         }
     }
 
     @Override
-    public Purchase getPurchaseById(int purchaseId) throws DAOException, RecordNotFoundException {
+    public Purchase getPurchaseById(int purchaseId) 
+            throws DAOException, RecordNotFoundException {
         return purchases.stream()
                 .filter(p -> p.getId() == purchaseId)
                 .findFirst()
@@ -124,7 +133,6 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
     @Override
     public double getTotalSpentByUser(String userEmail) throws DAOException {
         // In memoria non abbiamo i prezzi dei libri
-        // Questa implementazione richiederebbe un BookDAO
         return 0.0;
     }
 }

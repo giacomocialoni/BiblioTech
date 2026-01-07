@@ -2,6 +2,7 @@ package dao.memory;
 
 import dao.BookDAO;
 import exception.DAOException;
+import exception.DuplicateBookException;
 import exception.RecordNotFoundException;
 import model.Book;
 
@@ -11,6 +12,7 @@ import java.util.Optional;
 
 public class InMemoryBookDAO implements BookDAO {
 
+    private static InMemoryBookDAO instance = null;
     private final List<Book> books = new ArrayList<>();
     private int nextId = 4;
 
@@ -18,12 +20,18 @@ public class InMemoryBookDAO implements BookDAO {
         initializeSampleBooks();
     }
 
+    public static InMemoryBookDAO getInstance() {
+        if (instance == null) {
+            instance = new InMemoryBookDAO();
+        }
+        return instance;
+    }
+
     /* =========================
        INIZIALIZZAZIONE
        ========================= */
 
     private void initializeSampleBooks() {
-
         // Avventura
         books.add(new Book(
                 1,
@@ -85,12 +93,20 @@ public class InMemoryBookDAO implements BookDAO {
     @Override
     public Book getBookById(int id) throws DAOException, RecordNotFoundException {
         return findBookById(id)
-                .orElseThrow(() ->
+                .orElseThrow(() -> 
                         new RecordNotFoundException("Libro con ID " + id + " non trovato"));
     }
 
     @Override
-    public void addBook(Book book) throws DAOException {
+    public void addBook(Book book) throws DAOException, DuplicateBookException {
+        // Verifica duplicati per ISBN
+        boolean duplicateExists = books.stream()
+                .anyMatch(b -> b.getIsbn().equals(book.getIsbn()));
+        
+        if (duplicateExists) {
+            throw new DuplicateBookException("ISBN già esistente: " + book.getIsbn(), null, null);
+        }
+        
         book.setId(nextId++);
         books.add(book);
     }
@@ -118,7 +134,6 @@ public class InMemoryBookDAO implements BookDAO {
                                   String yearFrom,
                                   String yearTo,
                                   boolean includeUnavailable) throws DAOException {
-
         return books.stream()
                 .filter(b -> matchesSearchText(b, searchText, searchMode))
                 .filter(b -> matchesCategory(b, category))

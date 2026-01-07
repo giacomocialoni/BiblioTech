@@ -1,16 +1,17 @@
 package dao.memory;
 
+import dao.PostDAO;
+import exception.DAOException;
+import model.Post;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import dao.PostDAO;
-import exception.DAOException;
-import model.Post;
-
 public class InMemoryPostDAO implements PostDAO {
 
+    private static InMemoryPostDAO instance = null;
     private final List<Post> posts = new ArrayList<>();
 
     public InMemoryPostDAO() {
@@ -31,6 +32,13 @@ public class InMemoryPostDAO implements PostDAO {
                 "Sono arrivati nuovi titoli nella sezione Programmazione. Date un'occhiata al catalogo!",
                 LocalDateTime.now().minusHours(3)
         ));
+    }
+
+    public static InMemoryPostDAO getInstance() {
+        if (instance == null) {
+            instance = new InMemoryPostDAO();
+        }
+        return instance;
     }
 
     @Override

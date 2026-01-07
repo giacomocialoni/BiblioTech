@@ -10,12 +10,23 @@ import utils.LoanStatus;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class InMemoryLoanDAO implements LoanDAO {
 
+    private static InMemoryLoanDAO instance = null;
     private final List<Loan> loans = new ArrayList<>();
     private int nextId = 1;
+
+    public InMemoryLoanDAO() {
+        // Costruttore vuoto
+    }
+
+    public static InMemoryLoanDAO getInstance() {
+        if (instance == null) {
+            instance = new InMemoryLoanDAO();
+        }
+        return instance;
+    }
 
     @Override
     public void addLoan(String userEmail, int bookId) throws DAOException {
@@ -39,13 +50,9 @@ public class InMemoryLoanDAO implements LoanDAO {
 
     @Override
     public void deleteLoan(int loanId) throws DAOException, RecordNotFoundException {
-        Optional<Loan> loanToRemove = loans.stream()
-                .filter(l -> l.getId() == loanId)
-                .findFirst();
+        boolean removed = loans.removeIf(l -> l.getId() == loanId);
         
-        if (loanToRemove.isPresent()) {
-            loans.remove(loanToRemove.get());
-        } else {
+        if (!removed) {
             throw new RecordNotFoundException("Prestito con ID " + loanId + " non trovato");
         }
     }
@@ -138,7 +145,6 @@ public class InMemoryLoanDAO implements LoanDAO {
     @Override
     public List<Loan> searchLoansByBook(String searchText) throws DAOException {
         // In memoria non abbiamo informazioni sui libri, solo bookId
-        // Questa implementazione richiederebbe un BookDAO per fare la ricerca
         return new ArrayList<>();
     }
 
