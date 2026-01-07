@@ -8,9 +8,6 @@ import model.Account;
 import model.Admin;
 import model.User;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.*;
 import java.nio.file.*;
 import java.util.ArrayList;
@@ -18,48 +15,34 @@ import java.util.List;
 
 public class CSVAccountDAO implements AccountDAO {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(CSVAccountDAO.class);
     private static final String FILE_PATH = "src/main/resources/data/users.csv";
     
     @Override
     public Account login(String email, String password) throws DAOException, RecordNotFoundException {
         Path path = Paths.get(FILE_PATH);
         if (!Files.exists(path)) {
-            LOGGER.warn("File utenti non trovato: {}", FILE_PATH);
             throw new RecordNotFoundException("Credenziali non valide");
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-        	String header = reader.readLine(); // Leggi e memorizza l'header
-            if (header == null) {
-                LOGGER.warn("File utenti vuoto");
-                throw new RecordNotFoundException("Credenziali non valide");
-            }
-            LOGGER.debug("Header file utenti: {}", header);
+            reader.readLine(); // Skip header
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
                 String[] fields = parseCSVLine(line);
                 
-                if (fields.length >= 5 && 
-                    fields[0].equals(email) && 
-                    fields[1].equals(password)) {
-                    
+                if (fields.length >= 5 && fields[0].equals(email) && fields[1].equals(password)) {
                     String role = fields[4].toLowerCase();
-                    if ("admin".equals(role)) {
-                        return new Admin(fields[0], fields[1], fields[2], fields[3]);
-                    } else {
-                        return new User(fields[0], fields[1], fields[2], fields[3]);
-                    }
+                    return "admin".equals(role) ? 
+                           new Admin(fields[0], fields[1], fields[2], fields[3]) :
+                           new User(fields[0], fields[1], fields[2], fields[3]);
                 }
             }
             
         } catch (IOException e) {
-            LOGGER.error("Errore durante il login per email: {}", email, e);
             throw new DAOException("Errore durante il login", e);
         }
         
-        LOGGER.warn("Login fallito per email: {}", email);
         throw new RecordNotFoundException("Credenziali non valide");
     }
     
@@ -68,24 +51,14 @@ public class CSVAccountDAO implements AccountDAO {
                            String firstName, String lastName) 
             throws DAOException, EmailAlreadyRegisteredException {
         
-        // Verifica se l'email esiste già
         if (emailExists(email)) {
-            LOGGER.warn("Tentativo di registrazione con email già esistente: {}", email);
             throw new EmailAlreadyRegisteredException("Email già registrata: " + email);
         }
         
-        // Leggi tutti gli utenti
         List<String[]> users = readAllUsers();
-        
-        // Aggiungi nuovo utente
-        users.add(new String[]{
-            email, password, firstName, lastName, "logged_user"
-        });
-        
-        // Salva
+        users.add(new String[]{email, password, firstName, lastName, "logged_user"});
         saveAllUsers(users);
         
-        LOGGER.info("Utente registrato con successo: {}", email);
         return true;
     }
     
@@ -96,12 +69,7 @@ public class CSVAccountDAO implements AccountDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            String header = reader.readLine(); // Memorizza l'header
-            if (header == null) {
-                LOGGER.debug("File utenti vuoto durante verifica email");
-                return false;
-            }
-            LOGGER.trace("Header durante verifica email: {}", header);
+            reader.readLine(); // Skip header
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
@@ -112,7 +80,6 @@ public class CSVAccountDAO implements AccountDAO {
             }
             
         } catch (IOException e) {
-            LOGGER.error("Errore durante la verifica dell'email: {}", email, e);
             throw new DAOException("Errore durante la verifica dell'email", e);
         }
         
@@ -128,12 +95,7 @@ public class CSVAccountDAO implements AccountDAO {
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            String header = reader.readLine(); // Memorizza l'header
-            if (header == null) {
-                LOGGER.debug("File utenti vuoto durante lettura completa");
-                return users;
-            }
-            LOGGER.trace("Header durante lettura completa: {}", header);
+            reader.readLine(); // Skip header
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
@@ -141,7 +103,6 @@ public class CSVAccountDAO implements AccountDAO {
             }
             
         } catch (IOException e) {
-            LOGGER.error("Errore durante la lettura degli utenti", e);
             throw new DAOException("Errore durante la lettura degli utenti", e);
         }
         
@@ -167,7 +128,6 @@ public class CSVAccountDAO implements AccountDAO {
             }
             
         } catch (IOException e) {
-            LOGGER.error("Errore durante il salvataggio degli utenti", e);
             throw new DAOException("Errore durante il salvataggio degli utenti", e);
         }
     }
@@ -201,15 +161,20 @@ public class CSVAccountDAO implements AccountDAO {
     
     private String formatCSVLine(String[] fields) {
         StringBuilder sb = new StringBuilder();
+        
         for (int i = 0; i < fields.length; i++) {
-            if (i > 0) sb.append(",");
+            if (i > 0) {
+                sb.append(",");
+            }
             String field = fields[i] != null ? fields[i] : "";
+            
             if (field.contains(",") || field.contains("\"") || field.contains("\n")) {
                 sb.append("\"").append(field.replace("\"", "\"\"")).append("\"");
             } else {
                 sb.append(field);
             }
         }
+        
         return sb.toString();
     }
 }

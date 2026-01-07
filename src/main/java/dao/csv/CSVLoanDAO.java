@@ -2,12 +2,10 @@ package dao.csv;
 
 import dao.LoanDAO;
 import exception.DAOException;
+import exception.RecordNotFoundException;
 import model.Loan;
 import utils.Constants;
 import utils.LoanStatus;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.*;
@@ -17,15 +15,9 @@ import java.util.List;
 
 public class CSVLoanDAO implements LoanDAO {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CSVLoanDAO.class);
-
     private static final String FILE_PATH = "src/main/resources/data/loans.csv";
     private static final String CSV_HEADER =
             "id,user_email,book_id,status,reserved_date,loaned_date,returning_date";
-
-    /* =======================
-       CREATE
-       ======================= */
 
     @Override
     public void addLoan(String userEmail, int bookId) throws DAOException {
@@ -33,7 +25,6 @@ public class CSVLoanDAO implements LoanDAO {
 
         try {
             Files.createDirectories(path.getParent());
-
             boolean writeHeader = !Files.exists(path) || Files.size(path) == 0;
 
             try (BufferedWriter writer = Files.newBufferedWriter(
@@ -55,71 +46,54 @@ public class CSVLoanDAO implements LoanDAO {
                         LoanStatus.RESERVED
                 )));
                 writer.newLine();
-
-                LOGGER.info("Prestito CSV aggiunto: ID {}", nextId);
             }
 
         } catch (IOException e) {
-            LOGGER.error("Errore aggiunta prestito CSV", e);
             throw new DAOException("Errore durante l'aggiunta del prestito CSV", e);
         }
     }
 
-    /* =======================
-       UPDATE
-       ======================= */
-
     @Override
-    public void updateLoanStatus(int loanId, String status) throws DAOException {
+    public void updateLoanStatus(int loanId, String status) throws DAOException, RecordNotFoundException {
         LoanStatus newStatus = LoanStatus.valueOf(status);
+        updateLoanInternal(loanId, loan -> loan.setStatus(newStatus));
 
-        updateLoanInternal(loanId, loan -> {
-            loan.setStatus(newStatus);
-
-            if (newStatus == LoanStatus.LOANED) {
+        if (newStatus == LoanStatus.LOANED) {
+            updateLoanInternal(loanId, loan -> {
                 loan.setLoanedDate(LocalDate.now());
                 loan.setReturningDate(LocalDate.now().plusDays(Constants.LOANING_DAYS));
-            }
-        });
-
-        LOGGER.info("Stato prestito aggiornato CSV: ID {} -> {}", loanId, status);
+            });
+        }
     }
 
     @Override
-    public void acceptLoan(int loanId) throws DAOException {
+    public void acceptLoan(int loanId) throws DAOException, RecordNotFoundException {
         updateLoanStatus(loanId, LoanStatus.LOANED.name());
     }
 
     @Override
-    public void returnLoan(int loanId) throws DAOException {
+    public void returnLoan(int loanId) throws DAOException, RecordNotFoundException {
         updateLoanInternal(loanId, loan -> loan.setStatus(LoanStatus.RETURNED));
-        LOGGER.info("Prestito restituito CSV: ID {}", loanId);
     }
 
     @Override
-    public void deleteLoan(int loanId) throws DAOException {
+    public void deleteLoan(int loanId) throws DAOException, RecordNotFoundException {
         List<Loan> loans = loadAllLoans();
 
         boolean removed = loans.removeIf(l -> l.getId() == loanId);
         if (!removed) {
-            throw new DAOException("Prestito CSV non trovato: ID " + loanId);
+            throw new RecordNotFoundException("Prestito non trovato: ID " + loanId);
         }
 
         saveAllLoans(loans);
-        LOGGER.info("Prestito eliminato CSV: ID {}", loanId);
     }
 
-    /* =======================
-       READ
-       ======================= */
-
     @Override
-    public Loan getLoanById(int loanId) throws DAOException {
+    public Loan getLoanById(int loanId) throws DAOException, RecordNotFoundException {
         return loadAllLoans().stream()
                 .filter(l -> l.getId() == loanId)
                 .findFirst()
-                .orElseThrow(() ->
-                        new DAOException("Prestito CSV non trovato: ID " + loanId));
+                .orElseThrow(() -> new RecordNotFoundException("Prestito non trovato: ID " + loanId));
     }
 
     @Override
@@ -196,15 +170,10 @@ public class CSVLoanDAO implements LoanDAO {
 
         if (!expired.isEmpty()) {
             saveAllLoans(loans);
-            LOGGER.info("Aggiornati {} prestiti scaduti CSV", expired.size());
         }
 
         return expired;
     }
-
-    /* =======================
-       SEARCH & UTILITY
-       ======================= */
 
     @Override
     public List<Loan> searchLoansByUser(String searchText) throws DAOException {
@@ -217,7 +186,6 @@ public class CSVLoanDAO implements LoanDAO {
 
     @Override
     public List<Loan> searchLoansByBook(String searchText) {
-        LOGGER.warn("Ricerca per libro non supportata in CSV");
         return new ArrayList<>();
     }
 
@@ -231,10 +199,6 @@ public class CSVLoanDAO implements LoanDAO {
         return countActiveLoansByUser(userEmail) > 0;
     }
 
-    /* =======================
-       FILE HANDLING
-       ======================= */
-
     private List<Loan> loadAllLoans() throws DAOException {
         List<Loan> loans = new ArrayList<>();
         Path path = Paths.get(FILE_PATH);
@@ -244,25 +208,23 @@ public class CSVLoanDAO implements LoanDAO {
         }
 
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-        	String header = reader.readLine();
-        	if (header == null) {
-        	    LOGGER.warn("File CSV prestiti vuoto");
-        	    return loans;
-        	}
-
+            reader.readLine(); // Skip header
+            
             String line;
             while ((line = reader.readLine()) != null) {
-                Loan loan = parseLoanLine(line);
-                if (loan != null) {
-                    loans.add(loan);
+                if (!line.trim().isEmpty()) {
+                    Loan loan = parseLoanLine(line);
+                    if (loan != null) {
+                        loans.add(loan);
+                    }
                 }
             }
-            return loans;
-
+            
         } catch (IOException e) {
-            LOGGER.error("Errore lettura CSV prestiti", e);
             throw new DAOException("Errore lettura CSV prestiti", e);
         }
+        
+        return loans;
     }
 
     private void saveAllLoans(List<Loan> loans) throws DAOException {
@@ -282,14 +244,9 @@ public class CSVLoanDAO implements LoanDAO {
             }
 
         } catch (IOException e) {
-            LOGGER.error("Errore scrittura CSV prestiti", e);
             throw new DAOException("Errore scrittura CSV prestiti", e);
         }
     }
-
-    /* =======================
-       HELPERS
-       ======================= */
 
     private Loan parseLoanLine(String line) {
         try {
@@ -306,7 +263,6 @@ public class CSVLoanDAO implements LoanDAO {
             );
 
         } catch (Exception e) {
-            LOGGER.warn("Riga CSV prestito non valida: {}", line);
             return null;
         }
     }
@@ -330,7 +286,7 @@ public class CSVLoanDAO implements LoanDAO {
                 .orElse(0) + 1;
     }
 
-    private void updateLoanInternal(int loanId, LoanUpdater updater) throws DAOException {
+    private void updateLoanInternal(int loanId, LoanUpdater updater) throws DAOException, RecordNotFoundException {
         List<Loan> loans = loadAllLoans();
 
         for (Loan loan : loans) {
@@ -341,7 +297,7 @@ public class CSVLoanDAO implements LoanDAO {
             }
         }
 
-        throw new DAOException("Prestito CSV non trovato: ID " + loanId);
+        throw new RecordNotFoundException("Prestito non trovato: ID " + loanId);
     }
 
     private boolean isActive(Loan loan) {

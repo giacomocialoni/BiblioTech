@@ -4,9 +4,7 @@ import dao.WishlistDAO;
 import model.User;
 import model.Wishlist;
 import exception.DAOException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import exception.RecordNotFoundException;
 
 import java.io.*;
 import java.nio.file.*;
@@ -15,7 +13,6 @@ import java.util.List;
 
 public class CSVWishlistDAO implements WishlistDAO {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(CSVWishlistDAO.class);
     private static final String FILE_PATH = "src/main/resources/data/wishlist.csv";
     private static final String[] COLUMNS = {"user_email", "book_id"};
     
@@ -34,10 +31,7 @@ public class CSVWishlistDAO implements WishlistDAO {
             writer.write(line);
             writer.newLine();
             
-            LOGGER.info("Elemento aggiunto alla wishlist: utente {}, libro {}", userEmail, bookId);
-            
         } catch (IOException e) {
-            LOGGER.error("Errore durante l'aggiunta alla wishlist per utente {} libro {}", userEmail, bookId, e);
             throw new DAOException("Errore durante l'aggiunta alla wishlist per utente " + userEmail, e);
         }
     }
@@ -49,31 +43,27 @@ public class CSVWishlistDAO implements WishlistDAO {
         Path path = Paths.get(FILE_PATH);
         
         if (!Files.exists(path)) {
-            LOGGER.warn("File wishlist non trovato durante rimozione");
             return;
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            lines.add(reader.readLine());
+            lines.add(reader.readLine()); // Keep header
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
                 String[] fields = line.split(",");
                 if (fields[0].equals(userEmail) && Integer.parseInt(fields[1]) == bookId) {
                     found = true;
-                    LOGGER.debug("Elemento trovato per rimozione: utente {}, libro {}", userEmail, bookId);
                 } else {
                     lines.add(line);
                 }
             }
             
         } catch (IOException e) {
-            LOGGER.error("Errore durante la rimozione dalla wishlist per utente {} libro {}", userEmail, bookId, e);
             throw new DAOException("Errore durante la rimozione dalla wishlist per utente " + userEmail, e);
         }
         
         if (!found) {
-            LOGGER.debug("Elemento non trovato nella wishlist per rimozione: utente {}, libro {}", userEmail, bookId);
             return;
         }
         
@@ -83,10 +73,7 @@ public class CSVWishlistDAO implements WishlistDAO {
                 writer.newLine();
             }
             
-            LOGGER.info("Elemento rimosso dalla wishlist: utente {}, libro {}", userEmail, bookId);
-            
         } catch (IOException e) {
-            LOGGER.error("Errore durante la scrittura del file wishlist dopo rimozione", e);
             throw new DAOException("Errore durante la scrittura del file wishlist dopo rimozione", e);
         }
     }
@@ -95,51 +82,38 @@ public class CSVWishlistDAO implements WishlistDAO {
     public boolean isInWishlist(String userEmail, int bookId) throws DAOException {
         Path path = Paths.get(FILE_PATH);
         if (!Files.exists(path)) {
-            LOGGER.debug("File wishlist non trovato, elemento non presente");
             return false;
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            String header = reader.readLine();
-            if (header == null) {
-                LOGGER.warn("File wishlist vuoto");
-                return false;
-            }
+            reader.readLine(); // Skip header
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
                 String[] fields = line.split(",");
                 if (fields[0].equals(userEmail) && Integer.parseInt(fields[1]) == bookId) {
-                    LOGGER.debug("Elemento trovato nella wishlist: utente {}, libro {}", userEmail, bookId);
                     return true;
                 }
             }
             
         } catch (IOException e) {
-            LOGGER.error("Errore durante il controllo della wishlist per utente {} libro {}", userEmail, bookId, e);
             throw new DAOException("Errore durante il controllo della wishlist per utente " + userEmail, e);
         }
         
-        LOGGER.debug("Elemento non trovato nella wishlist: utente {}, libro {}", userEmail, bookId);
         return false;
     }
     
     @Override
-    public List<Wishlist> getWishlistByUser(String userEmail) throws DAOException {
+    public List<Wishlist> getWishlistByUser(String userEmail) throws DAOException, RecordNotFoundException {
         List<Wishlist> wishlist = new ArrayList<>();
         Path path = Paths.get(FILE_PATH);
         
         if (!Files.exists(path)) {
-            LOGGER.debug("File wishlist non trovato, restituita lista vuota per utente: {}", userEmail);
             return wishlist;
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            String header = reader.readLine();
-            if (header == null) {
-                LOGGER.debug("File wishlist vuoto");
-                return wishlist;
-            }
+            reader.readLine(); // Skip header
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
@@ -150,11 +124,9 @@ public class CSVWishlistDAO implements WishlistDAO {
             }
             
         } catch (IOException e) {
-            LOGGER.error("Errore durante il recupero della wishlist per utente: {}", userEmail, e);
             throw new DAOException("Errore durante il recupero della wishlist per utente " + userEmail, e);
         }
         
-        LOGGER.debug("Recuperati {} elementi wishlist per utente {}", wishlist.size(), userEmail);
         return wishlist;
     }
     
@@ -164,16 +136,11 @@ public class CSVWishlistDAO implements WishlistDAO {
         Path path = Paths.get(FILE_PATH);
         
         if (!Files.exists(path)) {
-            LOGGER.debug("File wishlist non trovato, restituita lista vuota per libro: {}", bookId);
             return users;
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            String header = reader.readLine();
-            if (header == null) {
-                LOGGER.debug("File wishlist vuoto");
-                return users;
-            }
+            reader.readLine(); // Skip header
             
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
@@ -184,11 +151,9 @@ public class CSVWishlistDAO implements WishlistDAO {
             }
             
         } catch (IOException e) {
-            LOGGER.error("Errore durante il recupero degli utenti con libro {} in wishlist", bookId, e);
             throw new DAOException("Errore durante il recupero degli utenti con libro " + bookId + " in wishlist", e);
         }
         
-        LOGGER.debug("Recuperati {} utenti con libro {} in wishlist", users.size(), bookId);
         return users;
     }
 }

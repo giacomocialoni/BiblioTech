@@ -6,18 +6,15 @@ import exception.RecordNotFoundException;
 import model.Purchase;
 import utils.PurchaseStatus;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.*;
 import java.nio.file.*;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CSVPurchaseDAO implements PurchaseDAO {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(CSVPurchaseDAO.class);
     private static final String FILE_PATH = "src/main/resources/data/purchases.csv";
     private static final String[] COLUMNS = {"id", "user_email", "book_id", "status", "status_date"};
     
@@ -47,137 +44,110 @@ public class CSVPurchaseDAO implements PurchaseDAO {
                 
                 writer.write(line);
                 writer.newLine();
-                
-                LOGGER.info("Acquisto aggiunto: ID {} per utente {} libro {}", nextId, userEmail, bookId);
             }
             
         } catch (IOException e) {
-            LOGGER.error("Errore durante l'aggiunta dell'acquisto per utente {} libro {}", userEmail, bookId, e);
             throw new DAOException("Errore durante l'aggiunta dell'acquisto per utente " + userEmail, e);
         }
     }
     
     @Override
-    public void updatePurchaseStatus(int purchaseId, PurchaseStatus status) throws DAOException {
+    public void updatePurchaseStatus(int purchaseId, PurchaseStatus status) 
+            throws DAOException, RecordNotFoundException {
         updatePurchase(purchaseId, purchase -> {
             purchase.setStatus(status);
             purchase.setStatusDate(LocalDate.now());
         });
-        LOGGER.info("Stato acquisto aggiornato: ID {} -> {}", purchaseId, status);
     }
     
     @Override
-    public void rejectPurchase(int purchaseId) throws DAOException {
+    public void rejectPurchase(int purchaseId) throws DAOException, RecordNotFoundException {
         List<Purchase> purchases = loadAllPurchases();
         boolean removed = purchases.removeIf(p -> p.getId() == purchaseId);
         
         if (!removed) {
-            LOGGER.warn("Tentativo di eliminazione acquisto non trovato: ID {}", purchaseId);
-            throw new RecordNotFoundException("Acquisto con ID " + purchaseId + " non trovato");
+            throw new RecordNotFoundException("Acquisto non trovato: ID " + purchaseId);
         }
         
         saveAllPurchases(purchases);
-        LOGGER.info("Acquisto rifiutato/eliminato: ID {}", purchaseId);
     }
     
     @Override
-    public Purchase getPurchaseById(int purchaseId) throws DAOException {
+    public Purchase getPurchaseById(int purchaseId) 
+            throws DAOException, RecordNotFoundException {
         return loadAllPurchases().stream()
                 .filter(p -> p.getId() == purchaseId)
                 .findFirst()
-                .orElseThrow(() -> {
-                    LOGGER.warn("Acquisto non trovato: ID {}", purchaseId);
-                    return new RecordNotFoundException("Acquisto con ID " + purchaseId + " non trovato");
-                });
+                .orElseThrow(() -> new RecordNotFoundException("Acquisto non trovato: ID " + purchaseId));
     }
     
     @Override
     public List<Purchase> getPurchasesByUser(String userEmail) throws DAOException {
-        List<Purchase> purchases = loadAllPurchases().stream()
+        return loadAllPurchases().stream()
                 .filter(p -> p.getUserEmail().equals(userEmail))
                 .toList();
-        LOGGER.debug("Recuperati {} acquisti per utente {}", purchases.size(), userEmail);
-        return purchases;
     }
     
     @Override
     public List<Purchase> getPurchasesByBook(int bookId) throws DAOException {
-        List<Purchase> purchases = loadAllPurchases().stream()
+        return loadAllPurchases().stream()
                 .filter(p -> p.getBookId() == bookId)
                 .toList();
-        LOGGER.debug("Recuperati {} acquisti per libro {}", purchases.size(), bookId);
-        return purchases;
     }
     
     @Override
     public List<Purchase> getPurchasesByStatus(PurchaseStatus status) throws DAOException {
-        List<Purchase> purchases = loadAllPurchases().stream()
+        return loadAllPurchases().stream()
                 .filter(p -> p.getStatus() == status)
                 .toList();
-        LOGGER.debug("Recuperati {} acquisti con stato {}", purchases.size(), status);
-        return purchases;
     }
     
     @Override
     public List<Purchase> getAllPurchases() throws DAOException {
         List<Purchase> purchases = loadAllPurchases();
-        LOGGER.debug("Recuperati tutti i {} acquisti", purchases.size());
-        return purchases;
+        return new ArrayList<>(purchases);
     }
     
     @Override
     public List<Purchase> searchPurchasesByUser(String searchText) throws DAOException {
         String lowerSearch = searchText.toLowerCase();
-        List<Purchase> purchases = loadAllPurchases().stream()
+        return loadAllPurchases().stream()
                 .filter(p -> p.getUserEmail().toLowerCase().contains(lowerSearch))
                 .toList();
-        LOGGER.debug("Ricerca acquisti per utente '{}': trovati {} risultati", searchText, purchases.size());
-        return purchases;
     }
     
     @Override
-    public List<Purchase> searchPurchasesByBook(String searchText) throws DAOException {
-        LOGGER.warn("Ricerca acquisti per libro non supportata in modalità CSV");
+    public List<Purchase> searchPurchasesByBook(String searchText) {
         return new ArrayList<>();
     }
     
     @Override
     public boolean hasUserPurchasedBook(String userEmail, int bookId) throws DAOException {
-        boolean purchased = loadAllPurchases().stream()
+        return loadAllPurchases().stream()
                 .filter(p -> p.getUserEmail().equals(userEmail))
                 .filter(p -> p.getBookId() == bookId)
                 .anyMatch(p -> p.getStatus() == PurchaseStatus.PURCHASED);
-        
-        LOGGER.debug("Utente {} ha acquistato libro {}: {}", userEmail, bookId, purchased);
-        return purchased;
     }
     
     @Override
     public List<Integer> getPurchasedBookIdsByUser(String userEmail) throws DAOException {
-        List<Integer> bookIds = loadAllPurchases().stream()
+        return loadAllPurchases().stream()
                 .filter(p -> p.getUserEmail().equals(userEmail))
                 .filter(p -> p.getStatus() == PurchaseStatus.PURCHASED)
                 .map(Purchase::getBookId)
                 .toList();
-        
-        LOGGER.debug("Utente {} ha acquistato {} libri", userEmail, bookIds.size());
-        return bookIds;
     }
     
     @Override
     public int countPurchasesByUser(String userEmail) throws DAOException {
-        int count = (int) loadAllPurchases().stream()
+        return (int) loadAllPurchases().stream()
                 .filter(p -> p.getUserEmail().equals(userEmail))
                 .filter(p -> p.getStatus() == PurchaseStatus.PURCHASED)
                 .count();
-        
-        LOGGER.debug("Utente {} ha completato {} acquisti", userEmail, count);
-        return count;
     }
     
     @Override
-    public double getTotalSpentByUser(String userEmail) throws DAOException {
-        LOGGER.warn("Calcolo spesa totale non supportato in modalità CSV per utente {}", userEmail);
+    public double getTotalSpentByUser(String userEmail) {
         return 0.0;
     }
     
@@ -186,47 +156,28 @@ public class CSVPurchaseDAO implements PurchaseDAO {
         Path path = Paths.get(FILE_PATH);
         
         if (!Files.exists(path)) {
-            LOGGER.debug("File acquisti non trovato, restituita lista vuota");
             return purchases;
         }
         
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            String header = reader.readLine();
-            if (header == null) {
-                LOGGER.warn("File acquisti vuoto");
-                return purchases;
-            }
-            LOGGER.debug("Header file acquisti: {}", header);
+            reader.readLine(); // Skip header
             
             String line;
-            int lineNumber = 1;
-            int errors = 0;
-            
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
                 try {
                     Purchase purchase = parsePurchase(line);
                     if (purchase != null) {
                         purchases.add(purchase);
-                    } else {
-                        errors++;
                     }
-                } catch (Exception e) {
-                    LOGGER.warn("Errore nel parsing dell'acquisto riga {}: {}", lineNumber, line, e);
-                    errors++;
+                } catch (DateTimeParseException e) {
+                    // Skip invalid date lines
                 }
-                lineNumber++;
-            }
-            
-            if (errors > 0) {
-                LOGGER.warn("Caricamento acquisti completato con {} errori", errors);
             }
             
         } catch (IOException e) {
-            LOGGER.error("Errore durante la lettura degli acquisti", e);
             throw new DAOException("Errore durante la lettura degli acquisti dal file", e);
         }
         
-        LOGGER.debug("Caricati {} acquisti", purchases.size());
         return purchases;
     }
     
@@ -247,7 +198,6 @@ public class CSVPurchaseDAO implements PurchaseDAO {
             }
             
         } catch (IOException e) {
-            LOGGER.error("Errore durante il salvataggio degli acquisti", e);
             throw new DAOException("Errore durante il salvataggio degli acquisti nel file", e);
         }
     }
@@ -256,7 +206,6 @@ public class CSVPurchaseDAO implements PurchaseDAO {
         List<String> fields = parseCSVLine(line);
         
         if (fields.size() < COLUMNS.length) {
-            LOGGER.warn("Numero insufficiente di campi nell'acquisto: {}", line);
             return null;
         }
         
@@ -269,8 +218,7 @@ public class CSVPurchaseDAO implements PurchaseDAO {
             
             return new Purchase(id, userEmail, bookId, statusDate, status);
             
-        } catch (Exception e) {
-            LOGGER.warn("Errore nel parsing della riga acquisto: {}", line, e);
+        } catch (NumberFormatException e) {
             return null;
         }
     }
@@ -318,11 +266,11 @@ public class CSVPurchaseDAO implements PurchaseDAO {
                 .mapToInt(Purchase::getId)
                 .max()
                 .orElse(0) + 1;
-        LOGGER.debug("Nuovo ID acquisto generato: {}", nextId);
         return nextId;
     }
     
-    private void updatePurchase(int purchaseId, PurchaseUpdater updater) throws DAOException {
+    private void updatePurchase(int purchaseId, PurchaseUpdater updater) 
+            throws DAOException, RecordNotFoundException {
         List<Purchase> purchases = loadAllPurchases();
         boolean found = false;
         
@@ -335,8 +283,7 @@ public class CSVPurchaseDAO implements PurchaseDAO {
         }
         
         if (!found) {
-            LOGGER.warn("Acquisto non trovato per aggiornamento: ID {}", purchaseId);
-            throw new RecordNotFoundException("Acquisto con ID " + purchaseId + " non trovato");
+            throw new RecordNotFoundException("Acquisto non trovato: ID " + purchaseId);
         }
         
         saveAllPurchases(purchases);
