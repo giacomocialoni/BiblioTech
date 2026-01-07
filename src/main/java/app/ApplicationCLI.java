@@ -6,7 +6,7 @@ import controller.cli.MainGuestControllerCLI;
 import dao.factory.DAOFactory;
 
 public class ApplicationCLI {
-
+	
     public static void start(DAOFactory factory) {
         // Imposta la factory attiva (fondamentale)
         DAOFactory.setActiveFactory(factory);
