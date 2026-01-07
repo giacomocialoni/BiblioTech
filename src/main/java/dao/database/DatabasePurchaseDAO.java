@@ -53,16 +53,18 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             stmt.setString(1, userEmail);
             stmt.setInt(2, bookId);
             stmt.executeUpdate();
+            LOGGER.info("Acquisto aggiunto per utente {} libro {}", userEmail, bookId);
 
         } catch (SQLException e) {
-            LOGGER.error("Errore durante l'inserimento dell'acquisto per utente {} libro {}", userEmail, bookId, e);
-            throw new DAOException("Errore durante l'inserimento dell'acquisto per utente " + userEmail, e);
+            String errorMessage = "Errore durante l'inserimento dell'acquisto per utente " + userEmail + " libro " + bookId;
+            LOGGER.error(errorMessage, e);
+            throw new DAOException(errorMessage, e);
         }
     }
 
     @Override
     public void updatePurchaseStatus(int purchaseId, PurchaseStatus status)
-            throws DAOException {
+            throws DAOException, RecordNotFoundException {
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SQL_UPDATE_STATUS)) {
@@ -72,13 +74,14 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
             int updated = stmt.executeUpdate();
             if (updated == 0) {
-                String errorMessage = "Acquisto con ID " + purchaseId + " non trovato per l'aggiornamento";
+                String errorMessage = "Acquisto con ID " + purchaseId + " non trovato per l'aggiornamento a stato " + status;
                 LOGGER.warn(errorMessage);
                 throw new RecordNotFoundException(errorMessage);
             }
+            LOGGER.info("Stato acquisto {} aggiornato a {}", purchaseId, status);
 
         } catch (SQLException e) {
-            String errorMessage = "Errore durante l'aggiornamento dello stato dell'acquisto ID " + purchaseId + " a " + status;
+            String errorMessage = "Errore SQL durante l'aggiornamento dello stato dell'acquisto ID " + purchaseId;
             LOGGER.error(errorMessage, e);
             throw new DAOException(errorMessage, e);
         }
@@ -86,16 +89,21 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
     @Override
     public void rejectPurchase(int purchaseId)
-            throws DAOException {
+            throws DAOException, RecordNotFoundException {
+        
+        LOGGER.info("Richiesta di rifiuto per acquisto ID {}", purchaseId);
         updatePurchaseStatus(purchaseId, PurchaseStatus.RESERVED);
+        LOGGER.info("Acquisto ID {} rifiutato", purchaseId);
     }
 
     /* ============== RECUPERO ============== */
 
     @Override
     public Purchase getPurchaseById(int purchaseId)
-            throws DAOException {
+            throws DAOException, RecordNotFoundException {
 
+        LOGGER.debug("Recupero acquisto con ID {}", purchaseId);
+        
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SQL_GET_BY_ID)) {
 
@@ -103,16 +111,17 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
+                    LOGGER.debug("Acquisto ID {} trovato", purchaseId);
                     return extractPurchaseFromResultSet(rs);
                 }
             }
 
-            String errorMessage = "Acquisto con ID " + purchaseId + " non trovato";
+            String errorMessage = "Acquisto con ID " + purchaseId + " non trovato nel database";
             LOGGER.warn(errorMessage);
             throw new RecordNotFoundException(errorMessage);
 
         } catch (SQLException e) {
-            String errorMessage = "Errore durante il recupero dell'acquisto con ID " + purchaseId;
+            String errorMessage = "Errore SQL durante il recupero dell'acquisto con ID " + purchaseId;
             LOGGER.error(errorMessage, e);
             throw new DAOException(errorMessage, e);
         }
@@ -120,36 +129,53 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
     @Override
     public List<Purchase> getPurchasesByUser(String userEmail) throws DAOException {
+        LOGGER.debug("Recupero acquisti per utente {}", userEmail);
+        
         try {
-            return executeQueryWithStringParam(SQL_GET_BY_USER, userEmail);
+            List<Purchase> purchases = executeQueryWithStringParam(SQL_GET_BY_USER, userEmail);
+            LOGGER.debug("Recuperati {} acquisti per utente {}", purchases.size(), userEmail);
+            return purchases;
         } catch (DAOException e) {
-            LOGGER.error("Errore durante il recupero degli acquisti per l'utente {}", userEmail, e);
-            throw new DAOException("Errore durante il recupero degli acquisti per l'utente " + userEmail, e);
+            String errorMessage = "Errore durante il recupero degli acquisti per l'utente " + userEmail;
+            LOGGER.error(errorMessage, e);
+            throw new DAOException(errorMessage, e);
         }
     }
 
     @Override
     public List<Purchase> getPurchasesByBook(int bookId) throws DAOException {
+        LOGGER.debug("Recupero acquisti per libro ID {}", bookId);
+        
         try {
-            return executeQueryWithIntParam(SQL_GET_BY_BOOK, bookId);
+            List<Purchase> purchases = executeQueryWithIntParam(SQL_GET_BY_BOOK, bookId);
+            LOGGER.debug("Recuperati {} acquisti per libro ID {}", purchases.size(), bookId);
+            return purchases;
         } catch (DAOException e) {
-            LOGGER.error("Errore durante il recupero degli acquisti per il libro ID {}", bookId, e);
-            throw new DAOException("Errore durante il recupero degli acquisti per il libro ID " + bookId, e);
+            String errorMessage = "Errore durante il recupero degli acquisti per il libro ID " + bookId;
+            LOGGER.error(errorMessage, e);
+            throw new DAOException(errorMessage, e);
         }
     }
 
     @Override
     public List<Purchase> getPurchasesByStatus(PurchaseStatus status) throws DAOException {
+        LOGGER.debug("Recupero acquisti con stato {}", status);
+        
         try {
-            return executeQueryWithStringParam(SQL_GET_BY_STATUS, status.name());
+            List<Purchase> purchases = executeQueryWithStringParam(SQL_GET_BY_STATUS, status.name());
+            LOGGER.debug("Recuperati {} acquisti con stato {}", purchases.size(), status);
+            return purchases;
         } catch (DAOException e) {
-            LOGGER.error("Errore durante il recupero degli acquisti con stato {}", status, e);
-            throw new DAOException("Errore durante il recupero degli acquisti con stato " + status, e);
+            String errorMessage = "Errore durante il recupero degli acquisti con stato " + status;
+            LOGGER.error(errorMessage, e);
+            throw new DAOException(errorMessage, e);
         }
     }
 
     @Override
     public List<Purchase> getAllPurchases() throws DAOException {
+        LOGGER.debug("Recupero di tutti gli acquisti");
+        
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SQL_GET_ALL);
              ResultSet rs = stmt.executeQuery()) {
@@ -158,11 +184,13 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             while (rs.next()) {
                 purchases.add(extractPurchaseFromResultSet(rs));
             }
+            LOGGER.debug("Recuperati {} acquisti totali", purchases.size());
             return purchases;
 
         } catch (SQLException e) {
-            LOGGER.error("Errore durante il recupero di tutti gli acquisti", e);
-            throw new DAOException("Errore durante il recupero di tutti gli acquisti", e);
+            String errorMessage = "Errore SQL durante il recupero di tutti gli acquisti";
+            LOGGER.error(errorMessage, e);
+            throw new DAOException(errorMessage, e);
         }
     }
 
@@ -170,30 +198,40 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
     @Override
     public List<Purchase> searchPurchasesByUser(String searchText) throws DAOException {
+        LOGGER.debug("Ricerca acquisti per utente contenente '{}'", searchText);
+        
         try {
-            return executeQueryWithStringParam(SQL_SEARCH_BY_USER, "%" + searchText.toLowerCase() + "%");
+            List<Purchase> purchases = executeQueryWithStringParam(SQL_SEARCH_BY_USER, "%" + searchText.toLowerCase() + "%");
+            LOGGER.debug("Trovati {} acquisti nella ricerca utente '{}'", purchases.size(), searchText);
+            return purchases;
         } catch (DAOException e) {
-            LOGGER.error("Errore durante la ricerca degli acquisti per utente: {}", searchText, e);
-            throw new DAOException("Errore durante la ricerca degli acquisti per utente: " + searchText, e);
+            String errorMessage = "Errore durante la ricerca degli acquisti per utente: '" + searchText + "'";
+            LOGGER.error(errorMessage, e);
+            throw new DAOException(errorMessage, e);
         }
     }
 
     @Override
     public List<Purchase> searchPurchasesByBook(String searchText) throws DAOException {
+        LOGGER.debug("Ricerca acquisti per libro contenente '{}'", searchText);
+        
         try {
-            return executeQueryWithStringParam(SQL_SEARCH_BY_BOOK, "%" + searchText.toLowerCase() + "%");
+            List<Purchase> purchases = executeQueryWithStringParam(SQL_SEARCH_BY_BOOK, "%" + searchText.toLowerCase() + "%");
+            LOGGER.debug("Trovati {} acquisti nella ricerca libro '{}'", purchases.size(), searchText);
+            return purchases;
         } catch (DAOException e) {
-            LOGGER.error("Errore durante la ricerca degli acquisti per libro: {}", searchText, e);
-            throw new DAOException("Errore durante la ricerca degli acquisti per libro: " + searchText, e);
+            String errorMessage = "Errore durante la ricerca degli acquisti per libro: '" + searchText + "'";
+            LOGGER.error(errorMessage, e);
+            throw new DAOException(errorMessage, e);
         }
     }
 
     /* ============== VERIFICHE ============== */
 
     @Override
-    public boolean hasUserPurchasedBook(String userEmail, int bookId)
-            throws DAOException {
-
+    public boolean hasUserPurchasedBook(String userEmail, int bookId) throws DAOException {
+        LOGGER.debug("Verifica se utente {} ha acquistato libro {}", userEmail, bookId);
+        
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SQL_HAS_PURCHASED)) {
 
@@ -201,20 +239,22 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             stmt.setInt(2, bookId);
 
             try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next();
+                boolean hasPurchased = rs.next();
+                LOGGER.debug("Utente {} ha acquistato libro {}: {}", userEmail, bookId, hasPurchased);
+                return hasPurchased;
             }
 
         } catch (SQLException e) {
-            String errorMessage = "Errore durante la verifica dell'acquisto per utente " + userEmail + " e libro " + bookId;
+            String errorMessage = "Errore SQL durante la verifica dell'acquisto per utente " + userEmail + " e libro " + bookId;
             LOGGER.error(errorMessage, e);
             throw new DAOException(errorMessage, e);
         }
     }
 
     @Override
-    public List<Integer> getPurchasedBookIdsByUser(String userEmail)
-            throws DAOException {
-
+    public List<Integer> getPurchasedBookIdsByUser(String userEmail) throws DAOException {
+        LOGGER.debug("Recupero ID libri acquistati da utente {}", userEmail);
+        
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SQL_GET_BOOK_IDS)) {
 
@@ -226,10 +266,11 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
                     ids.add(rs.getInt("book_id"));
                 }
             }
+            LOGGER.debug("Utente {} ha acquistato {} libri", userEmail, ids.size());
             return ids;
 
         } catch (SQLException e) {
-            String errorMessage = "Errore durante il recupero degli ID libri acquistati da " + userEmail;
+            String errorMessage = "Errore SQL durante il recupero degli ID libri acquistati da " + userEmail;
             LOGGER.error(errorMessage, e);
             throw new DAOException(errorMessage, e);
         }
@@ -239,6 +280,8 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
     @Override
     public int countPurchasesByUser(String userEmail) throws DAOException {
+        LOGGER.debug("Conteggio acquisti per utente {}", userEmail);
+        
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SQL_COUNT)) {
 
@@ -246,13 +289,16 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt(1);
+                    int count = rs.getInt(1);
+                    LOGGER.debug("Utente {} ha {} acquisti completati", userEmail, count);
+                    return count;
                 }
+                LOGGER.debug("Utente {} non ha acquisti completati", userEmail);
                 return 0;
             }
 
         } catch (SQLException e) {
-            String errorMessage = "Errore durante il conteggio degli acquisti per l'utente " + userEmail;
+            String errorMessage = "Errore SQL durante il conteggio degli acquisti per l'utente " + userEmail;
             LOGGER.error(errorMessage, e);
             throw new DAOException(errorMessage, e);
         }
@@ -260,6 +306,8 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
     @Override
     public double getTotalSpentByUser(String userEmail) throws DAOException {
+        LOGGER.debug("Calcolo spesa totale per utente {}", userEmail);
+        
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SQL_TOTAL_SPENT)) {
 
@@ -267,13 +315,16 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getDouble(1);
+                    double total = rs.getDouble(1);
+                    LOGGER.debug("Utente {} ha speso totale: {}", userEmail, total);
+                    return total;
                 }
+                LOGGER.debug("Utente {} non ha spese registrate", userEmail);
                 return 0.0;
             }
 
         } catch (SQLException e) {
-            String errorMessage = "Errore durante il calcolo della spesa totale per l'utente " + userEmail;
+            String errorMessage = "Errore SQL durante il calcolo della spesa totale per l'utente " + userEmail;
             LOGGER.error(errorMessage, e);
             throw new DAOException(errorMessage, e);
         }
@@ -296,8 +347,8 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             return list;
 
         } catch (SQLException e) {
-            String errorMessage = "Errore durante l'esecuzione della query SQL con parametro stringa";
-            LOGGER.error(errorMessage + ": {}", sql, e);
+            String errorMessage = "Errore SQL durante l'esecuzione della query con parametro stringa: " + sql;
+            LOGGER.error(errorMessage + " - Parametro: {}", param, e);
             throw new DAOException(errorMessage, e);
         }
     }
@@ -317,8 +368,8 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
             return list;
 
         } catch (SQLException e) {
-            String errorMessage = "Errore durante l'esecuzione della query SQL con parametro intero";
-            LOGGER.error(errorMessage + ": {}", sql, e);
+            String errorMessage = "Errore SQL durante l'esecuzione della query con parametro intero: " + sql;
+            LOGGER.error(errorMessage + " - Parametro: {}", param, e);
             throw new DAOException(errorMessage, e);
         }
     }
