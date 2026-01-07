@@ -10,7 +10,7 @@ public interface BookDAO {
     // Operazioni CRUD
     List<Book> getAllBooks() throws DAOException;
     Book getBookById(int id) throws DAOException;
-    void addBook(Book book) throws DAOException, DuplicateBookException;
+    void addBook(Book book) throws DAOException;
     void updateBook(Book book) throws DAOException;
     void deleteBook(int id) throws DAOException;
     

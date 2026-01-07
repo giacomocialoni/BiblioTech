@@ -7,11 +7,7 @@ public class CSVDAOFactory extends DAOFactory {
 
     @Override
     protected BookDAO createBookDAO() {
-        try {
-            return new CSVBookDAO();
-        } catch (Exception e) {
-            throw new RuntimeException("Errore nella creazione di CSVBookDAO", e);
-        }
+        return new CSVBookDAO();
     }
 
     @Override

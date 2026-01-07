@@ -12,53 +12,60 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CSVBookDAO implements BookDAO {
-    
+
     private static final String FILE_PATH = "src/main/resources/data/book.csv";
     private static final String[] COLUMNS = {
-        "id", "title", "author", "category", "year", "publisher", 
+        "id", "title", "author", "category", "year", "publisher",
         "pages", "isbn", "stock", "plot", "image_path", "price"
     };
-    private static final String CSV_HEADER = "id,title,author,category,year,publisher,pages,isbn,stock,plot,image_path,price";
-    
-    private final List<Book> books;
-    
-    public CSVBookDAO() throws DAOException {
-        this.books = new ArrayList<>();
-        loadBooks();
+    private static final String CSV_HEADER = String.join(",", COLUMNS);
+
+    private final List<Book> books = new ArrayList<>();
+
+    private void ensureLoaded() throws DAOException {
+        if (books.isEmpty()) {
+            loadBooks();
+        }
     }
-    
+
     @Override
-    public List<Book> getAllBooks() {
+    public List<Book> getAllBooks() throws DAOException {
+        ensureLoaded();
         return new ArrayList<>(books);
     }
-    
+
     @Override
     public Book getBookById(int id) throws DAOException {
+        ensureLoaded();
         return books.stream()
                 .filter(book -> book.getId() == id)
                 .findFirst()
                 .orElseThrow(() -> new DAOException("Libro con ID " + id + " non trovato"));
     }
-    
+
     @Override
     public void addBook(Book book) throws DAOException {
+        ensureLoaded();
         validateBookForAddition(book);
-        
+
         if (book.getId() <= 0) {
             int maxId = books.stream().mapToInt(Book::getId).max().orElse(0);
             book.setId(maxId + 1);
         }
+
         books.add(book);
         saveBooks();
     }
-    
-    private void validateBookForAddition(Book book) throws DuplicateBookException {
+
+    private void validateBookForAddition(Book book) throws DuplicateBookException, DAOException {
+        ensureLoaded();
+
         boolean isDuplicateISBN = books.stream()
                 .anyMatch(b -> b.getIsbn().equals(book.getIsbn()));
         boolean isDuplicateTitleAuthor = books.stream()
-                .anyMatch(b -> b.getTitle().equalsIgnoreCase(book.getTitle()) 
+                .anyMatch(b -> b.getTitle().equalsIgnoreCase(book.getTitle())
                         && b.getAuthor().equalsIgnoreCase(book.getAuthor()));
-        
+
         if (isDuplicateISBN) {
             throw new DuplicateBookException(book.getIsbn(), book.getTitle(), "isbn");
         }
@@ -66,9 +73,10 @@ public class CSVBookDAO implements BookDAO {
             throw new DuplicateBookException(book.getIsbn(), book.getTitle(), "title");
         }
     }
-    
+
     @Override
     public void updateBook(Book book) throws DAOException {
+        ensureLoaded();
         for (int i = 0; i < books.size(); i++) {
             if (books.get(i).getId() == book.getId()) {
                 books.set(i, book);
@@ -76,18 +84,16 @@ public class CSVBookDAO implements BookDAO {
                 return;
             }
         }
-        
         throw new DAOException("Libro con ID " + book.getId() + " non trovato");
     }
-    
+
     @Override
     public void deleteBook(int id) throws DAOException {
+        ensureLoaded();
         boolean removed = books.removeIf(book -> book.getId() == id);
-        
         if (!removed) {
             throw new DAOException("Libro con ID " + id + " non trovato");
         }
-        
         saveBooks();
     }
     
@@ -187,24 +193,19 @@ public class CSVBookDAO implements BookDAO {
     
     private void loadBooks() throws DAOException {
         books.clear();
-        
         try {
             URL resource = getClass().getClassLoader().getResource("data/book.csv");
-            
             if (resource != null) {
                 loadFromResource(resource);
-                return;
+            } else {
+                Path path = Paths.get(FILE_PATH);
+                if (Files.exists(path)) {
+                    loadFromFile(path);
+                } else {
+                    createSampleData();
+                    saveBooks();
+                }
             }
-            
-            Path path = Paths.get(FILE_PATH);
-            if (Files.exists(path)) {
-                loadFromFile(path);
-                return;
-            }
-            
-            createSampleData();
-            saveBooks();
-            
         } catch (IOException e) {
             throw new DAOException("Errore durante il caricamento dei libri", e);
         }
