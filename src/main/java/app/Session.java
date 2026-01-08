@@ -4,20 +4,15 @@ import model.Account;
 
 public final class Session {
 
+    private static final Session INSTANCE = new Session();
     private Account loggedUser;
 
     private Session() {
-        if (Holder.INSTANCE != null) {
-            throw new IllegalStateException("Use getInstance()");
-        }
-    }
-
-    private static class Holder {
-        private static final Session INSTANCE = new Session();
+        // Singleton intenzionale
     }
 
     public static Session getInstance() {
-        return Holder.INSTANCE;
+        return INSTANCE;
     }
 
     public void login(Account account) {
