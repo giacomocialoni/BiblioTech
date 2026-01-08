@@ -41,7 +41,8 @@ public class LoginController {
             return null;
         }
 
-        Session.getInstance().login(account);
+        Session.reset();
+        Session.init(account);
 
         return accountToBean(account);
     }

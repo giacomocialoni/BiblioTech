@@ -27,7 +27,7 @@ class AdminLoanFacadeTest {
     @Test
     void testGetAllReservedLoansNotAdmin() {
         User user = new User("user@test.com", "password", "Nome", "Cognome");
-        session.login(user);
+        Session.init(user);
 
         assertTrue(facade.getAllReservedLoans().isEmpty());
     }

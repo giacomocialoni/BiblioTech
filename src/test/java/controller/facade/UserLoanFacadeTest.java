@@ -34,7 +34,8 @@ class UserLoanFacadeTest {
     @Test
     void testLoanBookUnauthorizedUser() {
         Admin admin = new Admin("admin@test.com", "password", "Nome", "Cognome");
-        session.login(admin);
+        Session.reset();
+        Session.init(admin);
 
         LoanResult result = facade.loanBook(1);
         assertEquals(LoanResult.UNAUTHORIZED, result);
