@@ -1,6 +1,8 @@
 package app;
 
 import java.io.FileInputStream;
+
+import exception.ApplicationStartupException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -27,7 +29,7 @@ public class Main {
             viewType = startProps.getProperty("view.type");
             dataSourceType = startProps.getProperty("data.source");
         } catch (IOException e) {
-            throw new RuntimeException("Errore durante la lettura di start.properties", e);
+        	throw new ApplicationStartupException("Errore durante la lettura di start.properties", e);
         }
 
         // --- Configurazione DAOFactory Singleton ---
@@ -39,7 +41,7 @@ public class Main {
                 try (InputStream dbInput = new FileInputStream("src/main/resources/db.properties")) {
                     dbProps.load(dbInput);
                 } catch (IOException e) {
-                    throw new RuntimeException("Errore durante la lettura di db.properties", e);
+                	throw new ApplicationStartupException("Errore durante la lettura di db.properties", e);
                 }
 
                 String url = resolveEnv(dbProps.getProperty("db.url"));
