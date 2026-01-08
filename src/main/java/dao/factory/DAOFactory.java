@@ -34,6 +34,9 @@ public abstract class DAOFactory {
                 }
                 instance = new DatabaseDAOFactory(dbConnection);
                 break;
+            case "INMEMORY":
+                instance = new InMemoryDAOFactory();
+                break;
             default:
                 throw new IllegalArgumentException("Invalid mode: " + mode);
         }
