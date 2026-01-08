@@ -11,7 +11,10 @@ import java.util.List;
 public class DatabaseUserDAO implements UserDAO {
 
     private final DBConnection dbConnection;
-    private static final String EMAIL = "email", PASSWORD = "password", FIRST_NAME = "first_name", LAST_NAME = "last_name";
+    private static final String EMAIL = "email";
+    private static final String PASSWORD = "password";
+    private static final String FIRST_NAME = "first_name";
+    private static final String LAST_NAME = "last_name";
 
     public DatabaseUserDAO(DBConnection dbConnection) {
         this.dbConnection = dbConnection;

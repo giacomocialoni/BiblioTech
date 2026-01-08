@@ -172,7 +172,6 @@ public class CSVUserDAO implements UserDAO {
                 if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
                     currentField.append('"');
                     i += 2;
-                    continue;
                 } else {
                     inQuotes = !inQuotes;
                     i++;

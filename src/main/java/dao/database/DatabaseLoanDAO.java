@@ -335,22 +335,23 @@ public class DatabaseLoanDAO implements LoanDAO {
         }
     }
 
-    private void executeTransactionalOperation(TransactionalOperation operation)
-            throws DAOException {
-
+    private void executeTransactionalOperation(TransactionalOperation operation) throws DAOException {
         try (Connection conn = dbConnection.getConnection()) {
             conn.setAutoCommit(false);
-            try {
-                operation.execute(conn);
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);
-            }
+            executeWithTransaction(conn, operation);
+            conn.setAutoCommit(true);
         } catch (SQLException e) {
             throw new DAOException("Errore operazione transazionale", e);
+        }
+    }
+
+    private void executeWithTransaction(Connection conn, TransactionalOperation operation) throws SQLException, DAOException {
+        try {
+            operation.execute(conn);
+            conn.commit();
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
         }
     }
 

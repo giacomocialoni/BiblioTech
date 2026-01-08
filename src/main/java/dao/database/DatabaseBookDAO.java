@@ -5,7 +5,6 @@ import exception.DAOException;
 import exception.DuplicateBookException;
 import exception.RecordNotFoundException;
 import model.Book;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,48 +16,43 @@ public class DatabaseBookDAO implements BookDAO {
 
     private final DBConnection dbConnection;
 
+    /* ======================= COLUMN CONSTANTS ======================= */
+    private static final String ID = "id";
     private static final String TITLE = "title";
+    private static final String AUTHOR = "author";
+    private static final String CATEGORY = "category";
+    private static final String YEAR = "year";
+    private static final String PUBLISHER = "publisher";
+    private static final String PAGES = "pages";
+    private static final String ISBN = "isbn";
+    private static final String STOCK = "stock";
+    private static final String PLOT = "plot";
+    private static final String IMAGE_PATH = "image_path";
+    private static final String PRICE = "price";
 
     private static final String[] BOOK_COLUMNS = {
-            "id", "title", "author", "category", "year", "publisher",
-            "pages", "isbn", "stock", "plot", "image_path", "price"
+            ID, TITLE, AUTHOR, CATEGORY, YEAR, PUBLISHER,
+            PAGES, ISBN, STOCK, PLOT, IMAGE_PATH, PRICE
     };
 
-    private static final String BOOK_COLUMNS_JOINED =
-            String.join(", ", BOOK_COLUMNS);
+    private static final String BOOK_COLUMNS_JOINED = String.join(", ", BOOK_COLUMNS);
 
     /* ======================= SQL CONSTANTS ======================= */
+    private static final String SELECT_PREFIX = "SELECT ";
 
-    private static final String SELECT_ALL_BOOKS =
-            "SELECT " + BOOK_COLUMNS_JOINED + " FROM books ORDER BY title";
+    private static final String SELECT_ALL_BOOKS = SELECT_PREFIX + BOOK_COLUMNS_JOINED + " FROM books ORDER BY title";
+    private static final String SELECT_BOOK_BY_ID = SELECT_PREFIX + BOOK_COLUMNS_JOINED + " FROM books WHERE id = ?";
+    private static final String SELECT_AVAILABLE_BOOKS = SELECT_PREFIX + BOOK_COLUMNS_JOINED + " FROM books WHERE " + STOCK + " > 0 ORDER BY title";
+    private static final String SELECT_BOOKS_BY_CATEGORY = SELECT_PREFIX + BOOK_COLUMNS_JOINED + " FROM books WHERE category = ? ORDER BY title";
+    private static final String SELECT_BOOKS_BY_AUTHOR = SELECT_PREFIX + BOOK_COLUMNS_JOINED + " FROM books WHERE " + AUTHOR + " LIKE ? ORDER BY year DESC, title";
 
-    private static final String SELECT_BOOK_BY_ID =
-            "SELECT " + BOOK_COLUMNS_JOINED + " FROM books WHERE id = ?";
-
-    private static final String SELECT_AVAILABLE_BOOKS =
-            "SELECT " + BOOK_COLUMNS_JOINED + " FROM books WHERE stock > 0 ORDER BY title";
-
-    private static final String SELECT_BOOKS_BY_CATEGORY =
-            "SELECT " + BOOK_COLUMNS_JOINED + " FROM books WHERE category = ? ORDER BY title";
-
-    private static final String SELECT_BOOKS_BY_AUTHOR =
-            "SELECT " + BOOK_COLUMNS_JOINED + " FROM books WHERE author LIKE ? ORDER BY year DESC, title";
-
-    private static final String INSERT_BOOK =
-            "INSERT INTO books (title, author, category, year, publisher, pages, isbn, stock, plot, image_path, price) " +
+    private static final String INSERT_BOOK = "INSERT INTO books (title, author, category, year, publisher, pages, isbn, stock, plot, image_path, price) " +
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    private static final String UPDATE_BOOK =
-            "UPDATE books SET title=?, author=?, category=?, year=?, publisher=?, pages=?, isbn=?, stock=?, plot=?, image_path=?, price=? WHERE id=?";
-
-    private static final String DELETE_BOOK =
-            "DELETE FROM books WHERE id=?";
-
-    private static final String UPDATE_STOCK =
-            "UPDATE books SET stock = stock + ? WHERE id = ?";
-
-    private static final String CHECK_AVAILABILITY =
-            "SELECT stock FROM books WHERE id = ?";
+    private static final String UPDATE_BOOK = "UPDATE books SET title=?, author=?, category=?, year=?, publisher=?, pages=?, isbn=?, stock=?, plot=?, image_path=?, price=? WHERE id=?";
+    private static final String DELETE_BOOK = "DELETE FROM books WHERE id=?";
+    private static final String UPDATE_STOCK = "UPDATE books SET stock = stock + ? WHERE id=?";
+    private static final String CHECK_AVAILABILITY = SELECT_PREFIX + STOCK + " FROM books WHERE id=?";
 
     /* ============================================================= */
 
@@ -86,42 +80,48 @@ public class DatabaseBookDAO implements BookDAO {
                                   boolean includeUnavailable) throws DAOException {
 
         List<Book> books = new ArrayList<>();
-        StringBuilder sql = new StringBuilder(
-                "SELECT " + BOOK_COLUMNS_JOINED + " FROM books WHERE 1=1 "
-        );
+        StringBuilder sql = new StringBuilder(SELECT_PREFIX + BOOK_COLUMNS_JOINED + " FROM books WHERE 1=1 ");
 
         List<Object> params = new ArrayList<>();
 
         if (searchText != null && !searchText.isBlank()) {
             if (TITLE.equalsIgnoreCase(searchMode)) {
-                sql.append("AND LOWER(title) LIKE ? ");
+                sql.append("AND LOWER(").append(TITLE).append(") LIKE ? ");
                 params.add("%" + searchText.toLowerCase() + "%");
-            } else if ("author".equalsIgnoreCase(searchMode)) {
-                sql.append("AND LOWER(author) LIKE ? ");
+            } else if (AUTHOR.equalsIgnoreCase(searchMode)) {
+                sql.append("AND LOWER(").append(AUTHOR).append(") LIKE ? ");
                 params.add("%" + searchText.toLowerCase() + "%");
             }
         }
 
         if (category != null && !category.isBlank()) {
-            sql.append("AND category = ? ");
+            sql.append("AND ").append(CATEGORY).append(" = ? ");
             params.add(category);
         }
 
         if (yearFrom != null && !yearFrom.isBlank()) {
-            sql.append("AND year >= ? ");
-            params.add(Integer.parseInt(yearFrom));
+            try {
+                sql.append("AND ").append(YEAR).append(" >= ? ");
+                params.add(Integer.parseInt(yearFrom));
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Valore yearFrom non valido: {}", yearFrom);
+            }
         }
 
         if (yearTo != null && !yearTo.isBlank()) {
-            sql.append("AND year <= ? ");
-            params.add(Integer.parseInt(yearTo));
+            try {
+                sql.append("AND ").append(YEAR).append(" <= ? ");
+                params.add(Integer.parseInt(yearTo));
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Valore yearTo non valido: {}", yearTo);
+            }
         }
 
         if (!includeUnavailable) {
-            sql.append("AND stock > 0 ");
+            sql.append("AND ").append(STOCK).append(" > 0 ");
         }
 
-        sql.append("ORDER BY title");
+        sql.append("ORDER BY ").append(TITLE);
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
@@ -137,12 +137,12 @@ public class DatabaseBookDAO implements BookDAO {
 
             return books;
 
-        } catch (SQLException | NumberFormatException e) {
+        } catch (SQLException e) {
             LOGGER.error("Errore durante la ricerca dei libri", e);
             throw new DAOException("Errore durante la ricerca dei libri", e);
         }
     }
-    
+
     @Override
     public void addBook(Book book) throws DAOException {
         try (Connection conn = dbConnection.getConnection();
@@ -161,6 +161,7 @@ public class DatabaseBookDAO implements BookDAO {
             if (isDuplicateError(e)) {
                 throw new DuplicateBookException(book.getIsbn(), book.getTitle(), detectDuplicateType(e));
             }
+            LOGGER.error("Errore aggiunta libro {}", book.getTitle(), e);
             throw new DAOException("Errore durante l'aggiunta del libro " + book.getTitle(), e);
         }
     }
@@ -178,6 +179,7 @@ public class DatabaseBookDAO implements BookDAO {
             }
 
         } catch (SQLException e) {
+            LOGGER.error("Errore aggiornamento libro ID {}", book.getId(), e);
             throw new DAOException("Errore durante l'aggiornamento del libro ID " + book.getId(), e);
         }
     }
@@ -194,6 +196,7 @@ public class DatabaseBookDAO implements BookDAO {
             }
 
         } catch (SQLException e) {
+            LOGGER.error("Errore eliminazione libro ID {}", id, e);
             throw new DAOException("Errore durante l'eliminazione del libro ID " + id, e);
         }
     }
@@ -205,9 +208,10 @@ public class DatabaseBookDAO implements BookDAO {
 
             stmt.setInt(1, bookId);
             ResultSet rs = stmt.executeQuery();
-            return rs.next() && rs.getInt("stock") > 0;
+            return rs.next() && rs.getInt(STOCK) > 0;
 
         } catch (SQLException e) {
+            LOGGER.error("Errore controllo disponibilità libro ID {}", bookId, e);
             throw new DAOException("Errore controllo disponibilità libro ID " + bookId, e);
         }
     }
@@ -222,20 +226,19 @@ public class DatabaseBookDAO implements BookDAO {
             stmt.executeUpdate();
 
         } catch (SQLException e) {
+            LOGGER.error("Errore aggiornamento stock libro ID {}", bookId, e);
             throw new DAOException("Errore aggiornamento stock libro ID " + bookId, e);
         }
     }
 
     @Override
     public List<Book> getBooksByCategory(String category) throws DAOException {
-        return executeBookListQuery(SELECT_BOOKS_BY_CATEGORY,
-                stmt -> stmt.setString(1, category));
+        return executeBookListQuery(SELECT_BOOKS_BY_CATEGORY, stmt -> stmt.setString(1, category));
     }
 
     @Override
     public List<Book> getBooksByAuthor(String author) throws DAOException {
-        return executeBookListQuery(SELECT_BOOKS_BY_AUTHOR,
-                stmt -> stmt.setString(1, "%" + author + "%"));
+        return executeBookListQuery(SELECT_BOOKS_BY_AUTHOR, stmt -> stmt.setString(1, "%" + author + "%"));
     }
 
     @Override
@@ -261,6 +264,7 @@ public class DatabaseBookDAO implements BookDAO {
             return books;
 
         } catch (SQLException e) {
+            LOGGER.error("Errore esecuzione query libri", e);
             throw new DAOException("Errore esecuzione query libri", e);
         }
     }
@@ -280,25 +284,26 @@ public class DatabaseBookDAO implements BookDAO {
             throw new RecordNotFoundException(notFoundMsg);
 
         } catch (SQLException e) {
+            LOGGER.error("Errore recupero libro", e);
             throw new DAOException("Errore recupero libro", e);
         }
     }
 
     private Book extractBookFromResultSet(ResultSet rs) throws SQLException {
         return Book.builder()
-            .id(rs.getInt("id"))
-            .title(rs.getString(TITLE))
-            .author(rs.getString("author"))
-            .category(rs.getString("category"))
-            .year(rs.getInt("year"))
-            .publisher(rs.getString("publisher"))
-            .pages(rs.getInt("pages"))
-            .isbn(rs.getString("isbn"))
-            .stock(rs.getInt("stock"))
-            .plot(rs.getString("plot"))
-            .imagePath(rs.getString("image_path"))
-            .price(rs.getDouble("price"))
-            .build();
+                .id(rs.getInt(ID))
+                .title(rs.getString(TITLE))
+                .author(rs.getString(AUTHOR))
+                .category(rs.getString(CATEGORY))
+                .year(rs.getInt(YEAR))
+                .publisher(rs.getString(PUBLISHER))
+                .pages(rs.getInt(PAGES))
+                .isbn(rs.getString(ISBN))
+                .stock(rs.getInt(STOCK))
+                .plot(rs.getString(PLOT))
+                .imagePath(rs.getString(IMAGE_PATH))
+                .price(rs.getDouble(PRICE))
+                .build();
     }
 
     private void fillBookPreparedStatement(PreparedStatement stmt, Book book) throws SQLException {
@@ -321,7 +326,7 @@ public class DatabaseBookDAO implements BookDAO {
 
     private String detectDuplicateType(SQLException e) {
         return e.getMessage() != null && e.getMessage().toLowerCase().contains("isbn")
-                ? "isbn" : TITLE;
+                ? ISBN : TITLE;
     }
 
     @FunctionalInterface

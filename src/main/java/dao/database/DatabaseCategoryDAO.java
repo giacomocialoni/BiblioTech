@@ -61,7 +61,7 @@ public class DatabaseCategoryDAO implements CategoryDAO {
 
     @Override
     public void deleteCategory(String category)
-            throws DAOException, RecordNotFoundException {
+            throws DAOException {
 
         try {
             if (!exists(category)) {

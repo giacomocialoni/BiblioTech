@@ -22,9 +22,9 @@ public class DatabaseAccountDAO implements AccountDAO {
     }
 
     @Override
-    public Account login(String email, String password) throws DAOException, RecordNotFoundException {
-        
-        String sql = "SELECT * FROM users WHERE email = ? AND password = ?";
+    public Account login(String email, String password) throws DAOException {
+
+        String sql = "SELECT email, password, first_name, last_name, role FROM users WHERE email = ? AND password = ?";
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -39,20 +39,17 @@ public class DatabaseAccountDAO implements AccountDAO {
             String role = rs.getString("role");
             String firstName = rs.getString("first_name");
             String lastName = rs.getString("last_name");
-            
+
             if ("admin".equalsIgnoreCase(role)) {
-                Admin admin = new Admin(email, password, firstName, lastName);
-                return admin;
+                return new Admin(email, password, firstName, lastName);
             } else {
-                User user = new User(email, password, firstName, lastName);
-                return user;
+                return new User(email, password, firstName, lastName);
             }
         } catch (SQLException e) {
             throw new DAOException("Errore durante il login", e);
         }
     }
 
- // DatabaseAccountDAO.java (modifica solo il metodo register)
     @Override
     public boolean register(String email, String password, String firstName, String lastName)
             throws DAOException, EmailAlreadyRegisteredException {  
