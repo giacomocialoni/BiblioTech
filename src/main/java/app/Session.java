@@ -10,64 +10,49 @@ public final class Session {
 
     private static Session instance;
     private Account loggedAccount;
+    private boolean isGuest;
 
-    private Session(Account account) {
+    private Session(Account account, boolean isGuest) {
         this.loggedAccount = account;
+        this.isGuest = isGuest;
     }
 
-    // ====== INIT SINGLETON ======
-    /**
-     * Inizializza la sessione con un utente.
-     * Lancia eccezione se già inizializzata.
-     */
-    public static synchronized void init(Account account) {
+    // ====== INIT GUEST ======
+    public static synchronized void initGuest() {
         if (instance != null) {
-            throw new IllegalStateException("Session already initialized. Call reset() before init() for a new login.");
+            throw new IllegalStateException("Session already initialized. Call reset() before initGuest() or initLogin()");
         }
-        instance = new Session(account);
+        instance = new Session(null, true);
     }
 
-    // ====== RESET SINGLETON ======
-    /**
-     * Resetta completamente la sessione.
-     * Permette un nuovo login consecutivo.
-     */
+    // ====== INIT LOGIN ======
+    public static synchronized void initLogin(Account account) {
+        if (instance != null) {
+            throw new IllegalStateException("Session already initialized. Call reset() before initGuest() or initLogin()");
+        }
+        instance = new Session(account, false);
+    }
+
+    // ====== RESET ======
     public static synchronized void reset() {
         instance = null;
     }
 
     // ====== ACCESS ======
-    /**
-     * Ritorna l'istanza della sessione.
-     * Lancia eccezione se non inizializzata.
-     */
     public static Session getInstance() {
         if (instance == null) {
-            throw new IllegalStateException("Session not initialized. Call init() first.");
+            throw new IllegalStateException("Session not initialized. Call initGuest() or initLogin() first.");
         }
         return instance;
     }
 
-    // ====== LOGOUT ======
-    /**
-     * Effettua il logout pulendo lo stato interno.
-     * Non distrugge l'istanza; per login consecutivi usare reset() + init().
-     */
-    public void logout() {
-        this.loggedAccount = null;
-    }
-
-    // ====== SESSION LOGIC ======
+    // ====== UTILITY ======
     public boolean isLoggedIn() {
-        return loggedAccount != null;
-    }
-
-    public Account getLoggedUser() {
-        return loggedAccount;
+        return !isGuest && loggedAccount != null;
     }
 
     public boolean isGuest() {
-        return loggedAccount == null;
+        return isGuest;
     }
 
     public boolean isUser() {
@@ -78,11 +63,21 @@ public final class Session {
         return isLoggedIn() && "admin".equals(loggedAccount.getRole());
     }
 
+    public Account getLoggedUser() {
+        return loggedAccount;
+    }
+
     public String getUserEmail() {
         return isLoggedIn() ? loggedAccount.getEmail() : null;
     }
 
     public String getUserRole() {
-        return isLoggedIn() ? loggedAccount.getRole() : null;
+        if (isGuest) return "guest";
+        return loggedAccount.getRole();
+    }
+
+    public void logout() {
+        this.loggedAccount = null;
+        this.isGuest = true; // dopo logout torni automaticamente guest
     }
 }

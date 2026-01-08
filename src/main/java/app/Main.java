@@ -17,6 +17,8 @@ public class Main {
 
     public static void main(String[] args) {
 
+    	Session.initGuest();
+    	
         String viewType;
         String dataSourceType;
 

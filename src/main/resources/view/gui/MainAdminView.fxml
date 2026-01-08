@@ -19,7 +19,7 @@
                <HBox alignment="CENTER" styleClass="nav-wrapper">
                    <HBox alignment="CENTER" styleClass="nav-container">
                        <HBox alignment="CENTER" spacing="0" styleClass="nav-slider-track">
-						    <Button fx:id="prenotazioniButton" onAction="#showReservations" styleClass="nav-button" text="Pren." textAlignment="CENTER" wrapText="true" />
+						    <Button fx:id="prenotazioniButton" onAction="#showReservations" styleClass="nav-button" text="Prenot." textAlignment="CENTER" wrapText="true" />
 						    <Button fx:id="prestitiButton" onAction="#showReturnLoans" styleClass="nav-button" text="Prestiti" textAlignment="CENTER" wrapText="true" />
 						    <Button fx:id="gestioneLibriButton" onAction="#showManageBooks" styleClass="nav-button" text="Libri" textAlignment="CENTER" wrapText="true" />
 						    <Button fx:id="gestioneUtentiButton" onAction="#showManageUsers" styleClass="nav-button" text="Utenti" textAlignment="CENTER" wrapText="true" />

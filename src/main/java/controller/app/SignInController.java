@@ -57,7 +57,7 @@ public class SignInController {
      // Login automatico dopo registrazione
      Account account = new User(email, password, firstName, lastName);
      Session.reset();
-     Session.init(account);
+     Session.initLogin(account);
 
      try {
          AccountBean bean = new AccountBean();

@@ -16,7 +16,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     private final DBConnection dbConnection;
 
     // Costanti per le query SQL complete (non costruite dinamicamente)
-    private static final String SELECT_ALL_COLUMNS = "SELECT id, user_email, book_id, status, purchase_date, price FROM purchases";
+    private static final String SELECT_ALL_COLUMNS = "SELECT id, user_email, book_id, status, status_date FROM purchases";
     
     // Query specifiche
     private static final String SQL_GET_BY_ID = SELECT_ALL_COLUMNS + " WHERE id = ?";
@@ -29,6 +29,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     
     private static final String SQL_ADD = "INSERT INTO purchases (user_email, book_id, status, purchase_date) VALUES (?, ?, 'RESERVED', CURRENT_TIMESTAMP)";
     private static final String SQL_UPDATE_STATUS = "UPDATE purchases SET status = ? WHERE id = ?";
+    private static final String SQL_DELETE = "DELETE FROM purchases WHERE id = ?";
     private static final String SQL_HAS_PURCHASED = "SELECT 1 FROM purchases WHERE user_email = ? AND book_id = ? AND status = 'PURCHASED' LIMIT 1";
     private static final String SQL_GET_BOOK_IDS = "SELECT book_id FROM purchases WHERE user_email = ? AND status = 'PURCHASED'";
     private static final String SQL_COUNT = "SELECT COUNT(*) FROM purchases WHERE user_email = ? AND status = 'PURCHASED'";
@@ -77,9 +78,20 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     }
 
     @Override
-    public void rejectPurchase(int purchaseId)
-            throws DAOException {
-        updatePurchaseStatus(purchaseId, PurchaseStatus.RESERVED);
+    public void rejectPurchase(int purchaseId) throws DAOException {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(SQL_DELETE)) {
+
+            stmt.setInt(1, purchaseId);
+            int deleted = stmt.executeUpdate();
+
+            if (deleted == 0) {
+                throw new RecordNotFoundException("Acquisto con ID " + purchaseId + " non trovato per la cancellazione");
+            }
+
+        } catch (SQLException e) {
+            throw new DAOException("Errore durante la cancellazione dell'acquisto ID " + purchaseId, e);
+        }
     }
 
     /* ============== RECUPERO ============== */
@@ -110,11 +122,24 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
     @Override
     public List<Purchase> getPurchasesByUser(String userEmail) throws DAOException {
-        try {
-            return executeQueryWithStringParam(SQL_GET_BY_USER, userEmail);
-        } catch (DAOException e) {
+        String sql = SQL_GET_BY_USER;
+        List<Purchase> purchases = new ArrayList<>();
+
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, userEmail);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    purchases.add(extractPurchaseFromResultSet(rs));
+                }
+            }
+
+        } catch (SQLException e) {
             throw new DAOException("Errore durante il recupero degli acquisti per l'utente " + userEmail, e);
         }
+
+        return purchases;
     }
 
     @Override
@@ -305,7 +330,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
         int id = rs.getInt("id");
         String userEmail = rs.getString("user_email");
         int bookId = rs.getInt("book_id");
-        LocalDate statusDate = rs.getDate("purchase_date") != null ? rs.getDate("purchase_date").toLocalDate() : null;
+        LocalDate statusDate = rs.getDate("status_date") != null ? rs.getDate("status_date").toLocalDate() : null;
         PurchaseStatus status = PurchaseStatus.valueOf(rs.getString("status"));
 
         return new Purchase(id, userEmail, bookId, statusDate, status);

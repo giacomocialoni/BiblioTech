@@ -167,6 +167,8 @@ public class ManageBooksController {
             bean.setImagePath(book.getImagePath());
             bean.setStock(book.getStock());
             bean.setPrice(book.getPrice());
+            bean.setIsbn(book.getIsbn());      
+            bean.setYear(book.getYear());      
         } catch (Exception e) {
             logger.warn("Dati libro non validi id={}", book.getId(), e);
         }

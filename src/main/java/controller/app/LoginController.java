@@ -42,7 +42,7 @@ public class LoginController {
         }
 
         Session.reset();
-        Session.init(account);
+        Session.initLogin(account);
 
         return accountToBean(account);
     }
