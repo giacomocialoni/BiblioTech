@@ -5,7 +5,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-
+import utils.ViewConfig;
 import controller.gui.MainGuestControllerGUI;
 import controller.gui.MainUserControllerGUI;
 import controller.gui.MainAdminControllerGUI;
@@ -17,7 +17,6 @@ import app.state.StateChangeListener;
 import app.state.StateManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static utils.ViewConfig.GUI_BASE_PATH;
 
 public class StageManagerGUI implements StateChangeListener {
     private static final Logger logger = LoggerFactory.getLogger(StageManagerGUI.class);
@@ -29,7 +28,7 @@ public class StageManagerGUI implements StateChangeListener {
     private MainUserControllerGUI mainUserController;
     private MainAdminControllerGUI mainAdminController;
     
-    private static final String BASE_PATH = GUI_BASE_PATH;
+    private static final String BASE_PATH = ViewConfig.getGuiBasePath();
     
     // Main Views
     public static final String MAIN_GUEST_VIEW = BASE_PATH + "MainGuestView.fxml";
