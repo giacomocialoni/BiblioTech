@@ -16,7 +16,9 @@ public class Book {
     private String imagePath;
     private double price;
 
-    public Book() {}
+    public Book() {
+    	// public empty method for tests
+    }
 
     // Builder class
     public static class Builder {
