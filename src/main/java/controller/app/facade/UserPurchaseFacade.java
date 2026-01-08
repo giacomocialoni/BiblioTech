@@ -45,8 +45,7 @@ public class UserPurchaseFacade {
         if (!session.isLoggedIn()) {
             return false;
         }
-        boolean hasPurchased = purchaseController.hasPurchasedBook(session.getUserEmail(), bookId);
-        return hasPurchased;
+        return purchaseController.hasPurchasedBook(session.getUserEmail(), bookId);
     }
 
     public boolean canPurchase() {
