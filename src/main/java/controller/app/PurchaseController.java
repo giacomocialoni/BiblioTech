@@ -82,11 +82,10 @@ public class PurchaseController {
 
     public List<PurchaseBean> getAllReservedPurchases() {
         try {
-            List<PurchaseBean> purchases = purchaseDAO.getPurchasesByStatus(PurchaseStatus.RESERVED)
+            return purchaseDAO.getPurchasesByStatus(PurchaseStatus.RESERVED)
                     .stream()
                     .map(this::toPurchaseBean)
                     .toList();
-            return purchases;
         } catch (DAOException e) {
             logger.error("Errore recupero acquisti riservati", e);
             return List.of();

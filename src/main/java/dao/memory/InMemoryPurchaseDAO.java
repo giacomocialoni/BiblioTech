@@ -16,7 +16,9 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
     private final List<Purchase> purchases = new ArrayList<>();
     private int nextId = 1;
 
-    public InMemoryPurchaseDAO() {}
+    public InMemoryPurchaseDAO() {
+    	// empty method
+    }
 
     public static InMemoryPurchaseDAO getInstance() {
         if (instance == null) instance = new InMemoryPurchaseDAO();

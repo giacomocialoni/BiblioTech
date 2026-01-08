@@ -15,6 +15,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
 
     private static final String PURCHASE_COLUMNS = "id, user_email, book_id, quantity, status, status_date";
     private static final String BASE_SELECT = "SELECT " + PURCHASE_COLUMNS + " FROM purchases ";
+    private static final String BOOK_ID = "book_id";
 
     private final DBConnection dbConnection;
     private static final org.slf4j.Logger logger = 
@@ -154,7 +155,8 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
     public void rejectPurchase(int purchaseId) throws DAOException {
 
         executeTransactionalOperation(conn -> {
-            int bookId, quantity;
+            int bookId;
+            int quantity;
 
             // 1. Recupera i dati dell'acquisto
             String selectSql = "SELECT book_id, quantity FROM purchases WHERE id = ? AND status = 'RESERVED' FOR UPDATE";
@@ -164,7 +166,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
                     if (!rs.next()) {
                         throw new RecordNotFoundException("Acquisto non trovato o già processato: " + purchaseId);
                     }
-                    bookId = rs.getInt("book_id");
+                    bookId = rs.getInt(BOOK_ID);
                     quantity = rs.getInt("quantity");
                 }
             }
@@ -231,7 +233,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, userEmail);
             try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) list.add(rs.getInt("book_id"));
+                while (rs.next()) list.add(rs.getInt(BOOK_ID));
             }
         } catch (SQLException e) {
             throw new DAOException(e);
@@ -276,7 +278,7 @@ public class DatabasePurchaseDAO implements PurchaseDAO {
         return new Purchase(
                 rs.getInt("id"),
                 rs.getString("user_email"),
-                rs.getInt("book_id"),
+                rs.getInt(BOOK_ID),
                 rs.getInt("quantity"),
                 rs.getDate("status_date") != null ? rs.getDate("status_date").toLocalDate() : LocalDate.now(),
                 PurchaseStatus.valueOf(rs.getString("status"))

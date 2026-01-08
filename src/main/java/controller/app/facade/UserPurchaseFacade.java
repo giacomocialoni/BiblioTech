@@ -38,8 +38,7 @@ public class UserPurchaseFacade {
         }
 
         // Passa l'email automaticamente al controller
-        BuyResult result = purchaseController.buyBook(bookId, quantity, session.getUserEmail());
-        return result;
+        return purchaseController.buyBook(bookId, quantity, session.getUserEmail());
     }
 
     public boolean hasPurchasedBook(int bookId) {
@@ -51,8 +50,7 @@ public class UserPurchaseFacade {
     }
 
     public boolean canPurchase() {
-        boolean canPurchase = session.isUser();
-        return canPurchase;
+        return session.isUser();
     }
 
     public String getUserEmail() {
