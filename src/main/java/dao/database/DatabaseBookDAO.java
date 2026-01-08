@@ -34,25 +34,27 @@ public class DatabaseBookDAO implements BookDAO {
             ID, TITLE, AUTHOR, CATEGORY, YEAR, PUBLISHER,
             PAGES, ISBN, STOCK, PLOT, IMAGE_PATH, PRICE
     );
+    
+    private static final String SELECT = "SELECT ";
 
     /* ======================= SQL CONSTANTS ======================= */
     private static final String FROM_BOOKS = " FROM books";
     private static final String ORDER_BY_TITLE = " ORDER BY title";
     
     private static final String SELECT_ALL_BOOKS = 
-            "SELECT " + BOOK_COLUMNS_JOINED + FROM_BOOKS + ORDER_BY_TITLE;
+    		SELECT + BOOK_COLUMNS_JOINED + FROM_BOOKS + ORDER_BY_TITLE;
             
     private static final String SELECT_BOOK_BY_ID = 
-            "SELECT " + BOOK_COLUMNS_JOINED + FROM_BOOKS + " WHERE id = ?";
+    		SELECT + BOOK_COLUMNS_JOINED + FROM_BOOKS + " WHERE id = ?";
             
     private static final String SELECT_AVAILABLE_BOOKS = 
-            "SELECT " + BOOK_COLUMNS_JOINED + FROM_BOOKS + " WHERE stock > 0" + ORDER_BY_TITLE;
+    		SELECT + BOOK_COLUMNS_JOINED + FROM_BOOKS + " WHERE stock > 0" + ORDER_BY_TITLE;
             
     private static final String SELECT_BOOKS_BY_CATEGORY = 
-            "SELECT " + BOOK_COLUMNS_JOINED + FROM_BOOKS + " WHERE category = ?" + ORDER_BY_TITLE;
+    		SELECT + BOOK_COLUMNS_JOINED + FROM_BOOKS + " WHERE category = ?" + ORDER_BY_TITLE;
             
     private static final String SELECT_BOOKS_BY_AUTHOR = 
-            "SELECT " + BOOK_COLUMNS_JOINED + FROM_BOOKS + " WHERE author LIKE ?" +
+    		SELECT + BOOK_COLUMNS_JOINED + FROM_BOOKS + " WHERE author LIKE ?" +
             " ORDER BY year DESC, title";
 
     private static final String INSERT_BOOK = """
@@ -121,7 +123,6 @@ public class DatabaseBookDAO implements BookDAO {
             return rs.next() && rs.getInt(STOCK) > 0;
 
         } catch (SQLException e) {
-            LOGGER.error("Errore controllo disponibilità libro ID {}", bookId, e);
             throw new DAOException("Errore controllo disponibilità libro ID " + bookId, e);
         }
     }
@@ -243,7 +244,6 @@ public class DatabaseBookDAO implements BookDAO {
             return books;
 
         } catch (SQLException e) {
-            LOGGER.error("Errore esecuzione query libri", e);
             throw new DAOException("Errore esecuzione query libri", e);
         }
     }
@@ -329,7 +329,7 @@ public class DatabaseBookDAO implements BookDAO {
        ======================= */
 
     private String buildSearchQuery(SearchCriteria criteria) {
-        StringBuilder sql = new StringBuilder("SELECT ");
+        StringBuilder sql = new StringBuilder(SELECT);
         sql.append(BOOK_COLUMNS_JOINED).append(FROM_BOOKS).append(" WHERE 1=1 ");
         
         if (criteria.hasSearchText()) {
