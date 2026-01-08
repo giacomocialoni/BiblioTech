@@ -58,7 +58,7 @@ public class InMemoryLoanDAO implements LoanDAO {
     }
 
     @Override
-    public Loan getLoanById(int loanId) throws DAOException, RecordNotFoundException {
+    public Loan getLoanById(int loanId) throws DAOException {
         return loans.stream()
                 .filter(l -> l.getId() == loanId)
                 .findFirst()

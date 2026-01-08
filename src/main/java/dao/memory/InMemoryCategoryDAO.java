@@ -50,7 +50,7 @@ public class InMemoryCategoryDAO implements CategoryDAO {
     }
 
     @Override
-    public void deleteCategory(String category) throws DAOException, RecordNotFoundException {
+    public void deleteCategory(String category) throws DAOException {
         boolean removed = categories.removeIf(c -> c.getCategory().equalsIgnoreCase(category));
         
         if (!removed) {

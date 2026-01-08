@@ -6,8 +6,8 @@ import model.User;
 import model.Account;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class InMemoryUserDAO implements UserDAO {
 
@@ -15,7 +15,6 @@ public class InMemoryUserDAO implements UserDAO {
     private final List<Account> accounts;
 
     public InMemoryUserDAO() {
-        // Ottieni la lista accounts dal DAO Account
         this.accounts = new ArrayList<>();
         accounts.add(new User("user@bibliotech.com", "userpass", "Bob", "User"));
         accounts.add(new User("mario.rossi@email.com", "password", "Mario", "Rossi"));
@@ -41,23 +40,27 @@ public class InMemoryUserDAO implements UserDAO {
 
     @Override
     public List<User> getAllUsers() throws DAOException {
-        return accounts.stream()
-                .filter(a -> a instanceof User)
-                .map(a -> (User) a)
-                .collect(Collectors.toList());
+        return Collections.unmodifiableList(
+                accounts.stream()
+                        .filter(a -> a instanceof User)
+                        .map(a -> (User) a)
+                        .toList()
+        );
     }
 
     @Override
     public List<User> searchUsers(String searchTerm) throws DAOException {
         String lowerTerm = searchTerm.toLowerCase();
-        return accounts.stream()
-                .filter(a -> a instanceof User)
-                .map(a -> (User) a)
-                .filter(u -> 
-                    u.getEmail().toLowerCase().contains(lowerTerm) ||
-                    u.getFirstName().toLowerCase().contains(lowerTerm) ||
-                    u.getLastName().toLowerCase().contains(lowerTerm))
-                .collect(Collectors.toList());
+        return Collections.unmodifiableList(
+                accounts.stream()
+                        .filter(a -> a instanceof User)
+                        .map(a -> (User) a)
+                        .filter(u -> 
+                            u.getEmail().toLowerCase().contains(lowerTerm) ||
+                            u.getFirstName().toLowerCase().contains(lowerTerm) ||
+                            u.getLastName().toLowerCase().contains(lowerTerm))
+                        .toList()
+        );
     }
 
     @Override

@@ -30,7 +30,7 @@ public class InMemoryAccountDAO implements AccountDAO {
     }
 
     @Override
-    public Account login(String email, String password) throws DAOException, RecordNotFoundException {
+    public Account login(String email, String password) throws DAOException {
         return accounts.stream()
                 .filter(a -> a.getEmail().equalsIgnoreCase(email) && a.getPassword().equals(password))
                 .findFirst()

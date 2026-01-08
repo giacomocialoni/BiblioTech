@@ -88,14 +88,14 @@ public class InMemoryBookDAO implements BookDAO {
     }
 
     @Override
-    public Book getBookById(int id) throws DAOException, RecordNotFoundException {
+    public Book getBookById(int id) throws DAOException {
         return findBookById(id)
                 .orElseThrow(() -> 
                         new RecordNotFoundException("Libro con ID " + id + " non trovato"));
     }
 
     @Override
-    public void addBook(Book book) throws DAOException, DuplicateBookException {
+    public void addBook(Book book) throws DAOException {
         // Verifica duplicati per ISBN
         boolean duplicateExists = books.stream()
                 .anyMatch(b -> b.getIsbn().equals(book.getIsbn()));
@@ -109,13 +109,13 @@ public class InMemoryBookDAO implements BookDAO {
     }
 
     @Override
-    public void updateBook(Book book) throws DAOException, RecordNotFoundException {
+    public void updateBook(Book book) throws DAOException {
         int index = findBookIndexById(book.getId());
         books.set(index, book);
     }
 
     @Override
-    public void deleteBook(int id) throws DAOException, RecordNotFoundException {
+    public void deleteBook(int id) throws DAOException {
         Book book = getBookById(id);
         books.remove(book);
     }

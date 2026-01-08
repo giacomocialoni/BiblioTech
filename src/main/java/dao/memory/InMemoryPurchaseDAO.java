@@ -41,14 +41,14 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
 
     @Override
     public void updatePurchaseStatus(int purchaseId, PurchaseStatus status) 
-            throws DAOException, RecordNotFoundException {
+            throws DAOException {
         Purchase purchase = getPurchaseById(purchaseId);
         purchase.setStatus(status);
         purchase.setStatusDate(LocalDate.now());
     }
 
     @Override
-    public void rejectPurchase(int purchaseId) throws DAOException, RecordNotFoundException {
+    public void rejectPurchase(int purchaseId) throws DAOException {
         boolean removed = purchases.removeIf(p -> p.getId() == purchaseId);
         
         if (!removed) {
@@ -58,7 +58,7 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
 
     @Override
     public Purchase getPurchaseById(int purchaseId) 
-            throws DAOException, RecordNotFoundException {
+            throws DAOException {
         return purchases.stream()
                 .filter(p -> p.getId() == purchaseId)
                 .findFirst()

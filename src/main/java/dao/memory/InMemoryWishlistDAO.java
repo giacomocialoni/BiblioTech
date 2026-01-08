@@ -2,7 +2,6 @@ package dao.memory;
 
 import dao.WishlistDAO;
 import exception.DAOException;
-import exception.RecordNotFoundException;
 import model.User;
 import model.Wishlist;
 
@@ -54,7 +53,7 @@ public class InMemoryWishlistDAO implements WishlistDAO {
     }
 
     @Override
-    public List<Wishlist> getWishlistByUser(String userEmail) throws DAOException, RecordNotFoundException {
+    public List<Wishlist> getWishlistByUser(String userEmail) throws DAOException {
         List<Wishlist> userWishlist = new ArrayList<>();
         for (Wishlist item : wishlistItems) {
             if (item.getUserEmail().equals(userEmail)) {
