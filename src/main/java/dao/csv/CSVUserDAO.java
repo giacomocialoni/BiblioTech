@@ -147,10 +147,8 @@ public class CSVUserDAO implements UserDAO {
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
                 List<String> fields = parseCSVLine(line);
-                if (fields.size() >= 5) {
-                    if (roleFilter == null || roleFilter.equals(fields.get(4))) {
-                        users.add(new User(fields.get(0), fields.get(1), fields.get(2), fields.get(3)));
-                    }
+                if (fields.size() >= 5 && (roleFilter == null || roleFilter.equals(fields.get(4)))) {
+                	users.add(new User(fields.get(0), fields.get(1), fields.get(2), fields.get(3)));
                 }
             }
             
@@ -165,25 +163,30 @@ public class CSVUserDAO implements UserDAO {
         List<String> fields = new ArrayList<>();
         StringBuilder currentField = new StringBuilder();
         boolean inQuotes = false;
-        
-        for (int i = 0; i < line.length(); i++) {
+
+        int i = 0;
+        while (i < line.length()) {
             char c = line.charAt(i);
-            
+
             if (c == '"') {
                 if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
                     currentField.append('"');
-                    i++;
+                    i += 2;
+                    continue;
                 } else {
                     inQuotes = !inQuotes;
+                    i++;
                 }
             } else if (c == ',' && !inQuotes) {
                 fields.add(currentField.toString());
                 currentField.setLength(0);
+                i++;
             } else {
                 currentField.append(c);
+                i++;
             }
         }
-        
+
         fields.add(currentField.toString());
         return fields;
     }

@@ -13,114 +13,107 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CSVPostDAO implements PostDAO {
-    
+
     private static final String FILE_PATH = "src/main/resources/data/posts.csv";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final String CSV_HEADER = "user_fk,title,content,post_date";
-    
+
     @Override
     public List<Post> getAllPostsOrderedByDate() throws DAOException {
         List<Post> posts = new ArrayList<>();
         Path path = Paths.get(FILE_PATH);
-        
+
         if (!Files.exists(path)) {
             return posts;
         }
-        
+
         try (BufferedReader reader = Files.newBufferedReader(path)) {
             String header = reader.readLine();
             if (header == null || !header.trim().equals(CSV_HEADER)) {
                 throw new DAOException("File CSV post non valido: header mancante o non corretto");
             }
-            
+
             String line;
             while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
-                try {
-                    List<String> fields = parseCSVLine(line);
-                    
-                    if (fields.size() >= 4) {
-                        String userEmail = fields.get(0);
-                        String title = fields.get(1);
-                        String content = fields.get(2);
-                        
-                        String dateStr = fields.get(3).replace("\"", "").trim();
-                        LocalDateTime postDate = LocalDateTime.parse(dateStr, DATE_FORMATTER);
-                        
-                        String authorName = getAuthorNameFromEmail(userEmail);
-                        String role = userEmail.contains("admin") ? "admin" : "user";
-                        
-                        posts.add(new Post(userEmail, authorName, role, title, content, postDate));
-                    }
-                } catch (DateTimeParseException e) {
-                    // Skip invalid date lines
+                Post post = parsePostLine(line);
+                if (post != null) {
+                    posts.add(post);
                 }
             }
-            
+
             posts.sort((p1, p2) -> p2.getPostDate().compareTo(p1.getPostDate()));
-            
+
         } catch (IOException e) {
             throw new DAOException("Errore durante la lettura dei post da CSV", e);
         }
-        
+
         return posts;
     }
-    
+
     @Override
     public void addPost(Post post) throws DAOException {
         Path path = Paths.get(FILE_PATH);
         boolean fileExists = Files.exists(path);
-        
-        try (BufferedWriter writer = Files.newBufferedWriter(path, 
-                StandardOpenOption.CREATE, 
+
+        try (BufferedWriter writer = Files.newBufferedWriter(path,
+                StandardOpenOption.CREATE,
                 StandardOpenOption.APPEND)) {
-            
+
             if (!fileExists || Files.size(path) == 0) {
                 writer.write(CSV_HEADER);
                 writer.newLine();
             }
-            
+
             String line = String.join(",",
-                escapeField(post.getUserEmail()),
-                escapeField(escapeQuotes(post.getTitle())),
-                escapeField(escapeQuotes(post.getContent())),
-                escapeField(post.getPostDate().format(DATE_FORMATTER))
+                    escapeField(post.getUserEmail()),
+                    escapeField(escapeQuotes(post.getTitle())),
+                    escapeField(escapeQuotes(post.getContent())),
+                    escapeField(post.getPostDate().format(DATE_FORMATTER))
             );
-            
+
             writer.write(line);
             writer.newLine();
-            
+
         } catch (IOException e) {
             throw new DAOException("Errore durante il salvataggio del post in CSV", e);
         }
     }
-    
-    private String getAuthorNameFromEmail(String email) {
-        if (email == null || email.isEmpty()) {
-            return "Autore sconosciuto";
+
+    private Post parsePostLine(String line) {
+        try {
+            List<String> fields = parseCSVLine(line);
+
+            if (fields.size() < 4) return null;
+
+            String userEmail = fields.get(0);
+            String title = fields.get(1);
+            String content = fields.get(2);
+            String dateStr = fields.get(3).replace("\"", "").trim();
+
+            LocalDateTime postDate = LocalDateTime.parse(dateStr, DATE_FORMATTER);
+            String authorName = getAuthorNameFromEmail(userEmail);
+            String role = userEmail.contains("admin") ? "admin" : "user";
+
+            return new Post(userEmail, authorName, role, title, content, postDate);
+        } catch (DateTimeParseException e) {
+            return null;
         }
-        
-        String username = email.split("@")[0];
-        
-        if (!username.isEmpty()) {
-            return Character.toUpperCase(username.charAt(0)) + 
-                   (username.length() > 1 ? username.substring(1) : "");
-        }
-        
-        return "Autore sconosciuto";
     }
-    
+
     private List<String> parseCSVLine(String line) {
         List<String> fields = new ArrayList<>();
         StringBuilder currentField = new StringBuilder();
         boolean inQuotes = false;
-        
-        for (int i = 0; i < line.length(); i++) {
+
+        int i = 0;
+        while (i < line.length()) {
             char c = line.charAt(i);
-            
+
             if (c == '"') {
                 if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
                     currentField.append('"');
-                    i++;
+                    i += 2;
+                    continue;
                 } else {
                     inQuotes = !inQuotes;
                 }
@@ -130,27 +123,38 @@ public class CSVPostDAO implements PostDAO {
             } else {
                 currentField.append(c);
             }
+
+            i++;
         }
-        
+
         fields.add(currentField.toString());
         return fields;
     }
-    
+
     private String escapeQuotes(String text) {
-        if (text == null) {
-            return "";
-        }
-        return text.replace("\"", "\"\"");
+        return text == null ? "" : text.replace("\"", "\"\"");
     }
-    
+
     private String escapeField(String text) {
-        if (text == null) {
-            return "";
-        }
-        
+        if (text == null) return "";
+
         if (text.contains(",") || text.contains("\"") || text.contains("\n")) {
             return "\"" + text.replace("\"", "\"\"") + "\"";
         }
         return text;
+    }
+
+    private String getAuthorNameFromEmail(String email) {
+        if (email == null || email.isEmpty()) {
+            return "Autore sconosciuto";
+        }
+
+        String username = email.split("@")[0];
+        if (!username.isEmpty()) {
+            return Character.toUpperCase(username.charAt(0)) +
+                    (username.length() > 1 ? username.substring(1) : "");
+        }
+
+        return "Autore sconosciuto";
     }
 }

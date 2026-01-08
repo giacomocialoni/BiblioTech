@@ -145,14 +145,16 @@ public class CSVAccountDAO implements AccountDAO {
         List<String> fields = new ArrayList<>();
         StringBuilder currentField = new StringBuilder();
         boolean inQuotes = false;
-        
-        for (int i = 0; i < line.length(); i++) {
+
+        int i = 0;
+        while (i < line.length()) {
             char c = line.charAt(i);
-            
+
             if (c == '"') {
                 if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
                     currentField.append('"');
-                    i++;
+                    i += 2; 
+                    continue;
                 } else {
                     inQuotes = !inQuotes;
                 }
@@ -162,8 +164,10 @@ public class CSVAccountDAO implements AccountDAO {
             } else {
                 currentField.append(c);
             }
+
+            i++;
         }
-        
+
         fields.add(currentField.toString());
         return fields.toArray(new String[0]);
     }

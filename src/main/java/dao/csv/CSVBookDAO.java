@@ -57,7 +57,7 @@ public class CSVBookDAO implements BookDAO {
         saveBooks();
     }
 
-    private void validateBookForAddition(Book book) throws DuplicateBookException, DAOException {
+    private void validateBookForAddition(Book book) throws DAOException {
         ensureLoaded();
 
         boolean isDuplicateISBN = books.stream()
@@ -312,14 +312,17 @@ public class CSVBookDAO implements BookDAO {
         List<String> fields = new ArrayList<>();
         StringBuilder currentField = new StringBuilder();
         boolean inQuotes = false;
-        
-        for (int i = 0; i < line.length(); i++) {
+
+        int i = 0;
+        while (i < line.length()) {
             char c = line.charAt(i);
-            
+
             if (c == '"') {
                 if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                    // doppia virgoletta dentro le quote -> appendiamo una sola
                     currentField.append('"');
-                    i++;
+                    i += 2; // salto la seconda virgoletta
+                    continue;
                 } else {
                     inQuotes = !inQuotes;
                 }
@@ -329,8 +332,10 @@ public class CSVBookDAO implements BookDAO {
             } else {
                 currentField.append(c);
             }
+
+            i++;
         }
-        
+
         fields.add(currentField.toString());
         return fields;
     }

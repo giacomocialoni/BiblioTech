@@ -190,7 +190,7 @@ public class CSVLoanDAO implements LoanDAO {
 
     @Override
     public int countActiveLoansByUser(String userEmail) throws DAOException {
-        return (int) getActiveLoansByUser(userEmail).size();
+        return getActiveLoansByUser(userEmail).size();
     }
 
     @Override
