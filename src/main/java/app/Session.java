@@ -2,17 +2,22 @@ package app;
 
 import model.Account;
 
-public class Session {
+public final class Session {
 
-    private static Session instance;
     private Account loggedUser;
 
-    private Session() {}
+    private Session() {
+        if (Holder.INSTANCE != null) {
+            throw new IllegalStateException("Use getInstance()");
+        }
+    }
+
+    private static class Holder {
+        private static final Session INSTANCE = new Session();
+    }
 
     public static Session getInstance() {
-        if (instance == null)
-            instance = new Session();
-        return instance;
+        return Holder.INSTANCE;
     }
 
     public void login(Account account) {
@@ -24,43 +29,30 @@ public class Session {
     }
 
     public boolean isLoggedIn() {
-        boolean result = loggedUser != null;
-        return result;
+        return loggedUser != null;
     }
 
     public Account getLoggedUser() {
         return loggedUser;
     }
-    
-    // Metodi per i ruoli specifici: admin, logged_user, guest
+
     public boolean isGuest() {
         return !isLoggedIn();
     }
-    
+
     public boolean isUser() {
-        if (!isLoggedIn()) {
-            return false;
-        }
-        String role = loggedUser.getRole();
-        boolean result = "logged_user".equals(role);
-        return result;
+        return isLoggedIn() && "logged_user".equals(loggedUser.getRole());
     }
-    
+
     public boolean isAdmin() {
-        if (!isLoggedIn()) return false;
-        String role = loggedUser.getRole();
-        return "admin".equals(role);
+        return isLoggedIn() && "admin".equals(loggedUser.getRole());
     }
-    
+
     public String getUserEmail() {
         return isLoggedIn() ? loggedUser.getEmail() : null;
     }
-    
+
     public String getUserRole() {
-        if (!isLoggedIn()) {
-            return null;
-        }
-        String role = loggedUser.getRole();
-        return role;
+        return isLoggedIn() ? loggedUser.getRole() : null;
     }
 }
