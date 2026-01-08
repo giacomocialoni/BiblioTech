@@ -14,7 +14,13 @@ import app.state.MainGuestState;
 
 public class MainUserControllerGUI extends AbstractMainControllerGUI {
 
-    @FXML private Button catalogoButton, cercaButton, bachecaButton, profileButton, wishlistButton, infoButton, logoutButton;
+	@FXML private Button catalogoButton;
+	@FXML private Button cercaButton;
+	@FXML private Button bachecaButton;
+	@FXML private Button profileButton;
+	@FXML private Button wishlistButton;
+	@FXML private Button infoButton;
+	@FXML private Button logoutButton;
     private LogoutController logoutController;
 
     @FXML

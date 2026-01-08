@@ -1,7 +1,6 @@
 package controller.gui;
 
 import java.util.List;
-import app.state.StateManager;
 import controller.app.BachecaController;
 import javafx.fxml.FXML;
 import javafx.scene.layout.VBox;
@@ -13,7 +12,7 @@ public class BachecaControllerGUI {
     @FXML private VBox postsContainer;
     private final BachecaController controllerApp = new BachecaController();
 
-    public void setStateManager(StateManager stateManager) {
+    public void setStateManager() {
         loadPosts();
     }
 

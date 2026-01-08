@@ -34,7 +34,7 @@ public class ReservationControllerGUI {
     private final AdminLoanFacade adminLoanFacade = new AdminLoanFacade();
     private ReservationCardFactory cardFactory;
     
-    private static final String SUCCESS = "Successo", ERROR = "Errore", ACTIVE = "active";
+    private static final String ACTIVE = "active";
     private boolean initialized = false;
     private String searchMode = "user";
 
@@ -92,7 +92,7 @@ public class ReservationControllerGUI {
     @FXML
     public void handleSearch() {
         if (cardFactory == null) {
-            showError("Attenzione", "Sistema non ancora inizializzato");
+            showError("Sistema non ancora inizializzato");
             return;
         }
 
@@ -159,7 +159,7 @@ public class ReservationControllerGUI {
             displayReservations(purchases, loans);
 
         } catch (Exception e) {
-            showError(ERROR, "Errore nel caricamento delle prenotazioni");
+            showError("Errore nel caricamento delle prenotazioni");
         }
     }
 
@@ -178,7 +178,7 @@ public class ReservationControllerGUI {
                         cardFactory.createPurchaseCard(
                             purchase,
                             purchase.getBook(),
-                            () -> handleAcceptPurchase(purchase.getId(), purchase.getBookId()),
+                            () -> handleAcceptPurchase(purchase.getId()),
                             () -> handleRejectPurchase(purchase.getId())
                         )
                     );
@@ -207,7 +207,7 @@ public class ReservationControllerGUI {
             updateResultsLabel(count, purchases.size(), loans.size());
 
         } catch (Exception e) {
-            showError(ERROR, "Errore nella visualizzazione dei risultati");
+            showError("Errore nella visualizzazione dei risultati");
         }
     }
     
@@ -231,17 +231,17 @@ public class ReservationControllerGUI {
         }
     }
 
-    private void handleAcceptPurchase(int purchaseId, int bookId) {
+    private void handleAcceptPurchase(int purchaseId) {
         try {
             boolean success = adminPurchaseFacade.acceptPurchase(purchaseId);
             if (success) {
                 loadAllReservations();
-                showSuccess(SUCCESS, "Vendita accettata con successo!");
+                showSuccess("Vendita accettata con successo!");
             } else {
-                showError(ERROR, "Impossibile accettare la vendita");
+                showError("Impossibile accettare la vendita");
             }
         } catch (Exception e) {
-            showError(ERROR, "Errore nell'accettare la vendita: " + e.getMessage());
+            showError("Errore nell'accettare la vendita: " + e.getMessage());
         }
     }
 
@@ -250,12 +250,12 @@ public class ReservationControllerGUI {
             boolean success = adminPurchaseFacade.rejectPurchase(purchaseId);
             if (success) {
                 loadAllReservations();
-                showSuccess(SUCCESS, "Vendita rifiutata!");
+                showSuccess("Vendita rifiutata!");
             } else {
-                showError(ERROR, "Impossibile rifiutare la vendita");
+                showError("Impossibile rifiutare la vendita");
             }
         } catch (Exception e) {
-            showError(ERROR, "Errore nel rifiutare la vendita: " + e.getMessage());
+            showError("Errore nel rifiutare la vendita: " + e.getMessage());
         }
     }
 
@@ -264,12 +264,12 @@ public class ReservationControllerGUI {
             boolean success = adminLoanFacade.acceptLoan(loanId);
             if (success) {
                 loadAllReservations();
-                showSuccess(SUCCESS, "Prestito accettato con successo!");
+                showSuccess("Prestito accettato con successo!");
             } else {
-                showError(ERROR, "Impossibile accettare il prestito");
+                showError("Impossibile accettare il prestito");
             }
         } catch (Exception e) {
-            showError(ERROR, "Errore nell'accettare il prestito: " + e.getMessage());
+            showError("Errore nell'accettare il prestito: " + e.getMessage());
         }
     }
 
@@ -278,20 +278,20 @@ public class ReservationControllerGUI {
             boolean success = adminLoanFacade.rejectLoan(loanId);
             if (success) {
                 loadAllReservations();
-                showSuccess(SUCCESS, "Prestito rifiutato!");
+                showSuccess("Prestito rifiutato!");
             } else {
-                showError(ERROR, "Impossibile rifiutare il prestito");
+                showError("Impossibile rifiutare il prestito");
             }
         } catch (Exception e) {
-            showError(ERROR, "Errore nel rifiutare il prestito: " + e.getMessage());
+            showError("Errore nel rifiutare il prestito: " + e.getMessage());
         }
     }
 
-    private void showSuccess(String title, String message) {
+    private void showSuccess(String message) {
         stateManager.setState(new SuccessState(stateManager, message));
     }
 
-    private void showError(String title, String message) {
+    private void showError(String message) {
         stateManager.setState(new ErrorState(stateManager, message));
     }
 }

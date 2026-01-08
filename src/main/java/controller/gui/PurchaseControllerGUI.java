@@ -73,38 +73,23 @@ public class PurchaseControllerGUI {
     @FXML
     private void handleConfirm() {
         BuyResult result = purchaseFacade.buyBook(book.getId(), quantity);
-        
+
         switch (result) {
-            case SUCCESS -> {
-                stateManager.setState(new SuccessState(
-                        stateManager, 
-                        "Acquisto effettuato con successo!"
-                    ));
-            }
-            case INSUFFICIENT_STOCK -> {
-                stateManager.setState(new ErrorState(
-                    stateManager, 
-                    "Stock insufficiente! Sono disponibili solo " + book.getStock() + " copie."
-                ));
-            }
-            case NOT_LOGGED -> {
-                stateManager.setState(new ErrorState(
-                    stateManager, 
-                    "Devi essere loggato per effettuare acquisti."
-                ));
-            }
-            case UNAUTHORIZED -> {
-                stateManager.setState(new ErrorState(
-                    stateManager, 
-                    "Il tuo account non permette acquisti."
-                ));
-            }
-            case ERROR -> {
-                stateManager.setState(new ErrorState(
-                    stateManager, 
-                    "Errore durante l'acquisto. Riprova più tardi."
-                ));
-            }
+            case SUCCESS -> stateManager.setState(
+                new SuccessState(stateManager, "Acquisto effettuato con successo!")
+            );
+            case INSUFFICIENT_STOCK -> stateManager.setState(
+                new ErrorState(stateManager, "Stock insufficiente! Sono disponibili solo " + book.getStock() + " copie.")
+            );
+            case NOT_LOGGED -> stateManager.setState(
+                new ErrorState(stateManager, "Devi essere loggato per effettuare acquisti.")
+            );
+            case UNAUTHORIZED -> stateManager.setState(
+                new ErrorState(stateManager, "Il tuo account non permette acquisti.")
+            );
+            case ERROR -> stateManager.setState(
+                new ErrorState(stateManager, "Errore durante l'acquisto. Riprova più tardi.")
+            );
             default -> throw new IllegalArgumentException("Unexpected value: " + result);
         }
     }

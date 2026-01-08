@@ -13,7 +13,11 @@ import app.state.LoginState;
 
 public class MainGuestControllerGUI extends AbstractMainControllerGUI {
 
-    @FXML private Button catalogoButton, cercaButton, bachecaButton, infoButton, loginButton;
+	@FXML private Button catalogoButton;
+	@FXML private Button cercaButton;
+	@FXML private Button bachecaButton;
+	@FXML private Button infoButton;
+	@FXML private Button loginButton;
 
     @FXML
     public void initialize() {

@@ -31,8 +31,8 @@ public class ProfiloControllerGUI {
     @FXML private HBox loansBox;
     @FXML private ScrollPane loansPane;
     @FXML private ScrollPane purchasesPane;
-    @FXML private Label LoansLabel;
-    @FXML private Label PurchasesLabel;
+    @FXML private Label loansLabel;
+    @FXML private Label purchasesLabel;
 
     private final ProfiloController appController = new ProfiloController();
     private BookCardFactory bookCardFactory;
@@ -99,7 +99,7 @@ public class ProfiloControllerGUI {
         List<BookBean> books = appController.getPurchasedBooks(user.getEmail());
 
         if (books.isEmpty()) {
-            PurchasesLabel.setText("Non hai ancora acquistato libri");
+            purchasesLabel.setText("Non hai ancora acquistato libri");
             purchasesPane.setVisible(false);
             purchasesPane.setManaged(false);
             return;
@@ -119,7 +119,7 @@ public class ProfiloControllerGUI {
         List<LoanBean> loans = appController.getActiveLoans(user.getEmail());
 
         if (loans.isEmpty()) {
-            LoansLabel.setText("Non hai prestiti attivi");
+        	loansLabel.setText("Non hai prestiti attivi");
             loansPane.setVisible(false);
             loansPane.setManaged(false);
             return;

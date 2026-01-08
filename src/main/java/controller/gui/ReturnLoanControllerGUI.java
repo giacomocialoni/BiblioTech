@@ -102,9 +102,9 @@ public class ReturnLoanControllerGUI {
     private void handleReturnLoan(int loanId) {
         if (appController.returnLoan(loanId)) {
             loadAllLoans();
-            showSuccess("Successo", "Prestito restituito con successo!");
+            showSuccess("Prestito restituito con successo!");
         } else {
-            showError("Errore", "Errore nella restituzione del prestito");
+            showError("Errore nella restituzione del prestito");
         }
     }
 
@@ -135,12 +135,12 @@ public class ReturnLoanControllerGUI {
     }
 
     // ===================== UI HELPERS =====================
-    private void showSuccess(String title, String message) {
+    private void showSuccess(String message) {
         SuccessState successState = new SuccessState(stateManager, message);
         stateManager.setState(successState);
     }
 
-    private void showError(String title, String message) {
+    private void showError(String message) {
         ErrorState errorState = new ErrorState(stateManager, message);
         stateManager.setState(errorState);
     }

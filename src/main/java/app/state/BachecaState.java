@@ -15,7 +15,7 @@ public class BachecaState extends PrimaryState {
             stateManager.getStageManager().<BachecaControllerGUI>loadContent(StageManagerGUI.BACHECA_VIEW);
 
         if (controllerBacheca != null) {
-            controllerBacheca.setStateManager(stateManager);
+            controllerBacheca.setStateManager();
         }
     }
 }

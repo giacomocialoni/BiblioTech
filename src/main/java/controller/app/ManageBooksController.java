@@ -80,7 +80,7 @@ public class ManageBooksController {
 
     // ===== OPERAZIONI CRUD / STOCK =====
 
-    public void addBook(BookBean bookBean) throws DuplicateBookException {
+    public void addBook(BookBean bookBean) {
         try {
             Book book = mapBeanToModel(bookBean);
             bookDAO.addBook(book);

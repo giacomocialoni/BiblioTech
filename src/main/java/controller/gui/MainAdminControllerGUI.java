@@ -13,7 +13,19 @@ import javafx.scene.control.Button;
 
 public class MainAdminControllerGUI extends AbstractMainControllerGUI {
 
-    @FXML private Button prenotazioniButton, gestioneLibriButton, gestioneUtentiButton, postButton, logoutButton, prestitiButton;
+	@FXML
+	private Button prenotazioniButton;
+	@FXML
+	private Button gestioneLibriButton;
+	@FXML
+	private Button gestioneUtentiButton;
+	@FXML
+	private Button postButton;
+	@FXML
+	private Button logoutButton;
+	@FXML
+	private Button prestitiButton;
+	
     private LogoutController logoutController;
 
     @FXML

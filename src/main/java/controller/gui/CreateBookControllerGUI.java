@@ -5,7 +5,6 @@ import app.state.StateManager;
 import app.state.SuccessState;
 import bean.BookBean;
 import controller.app.ManageBooksController;
-import exception.DuplicateBookException;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -15,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -128,12 +128,6 @@ public class CreateBookControllerGUI {
                 "Book '" + bean.getTitle() + "' created successfully"
             ));
 
-        } catch (DuplicateBookException e) {
-            logger.warn("Duplicate book creation attempt", e);
-            stateManager.setState(new ErrorState(
-                stateManager,
-                e.getUserFriendlyMessage()
-            ));
         } catch (Exception e) {
             logger.error("Error creating book", e);
             stateManager.setState(new ErrorState(
@@ -143,7 +137,7 @@ public class CreateBookControllerGUI {
         }
     }
 
-    private String copyImageToResources(File source, String title) throws Exception {
+    private String copyImageToResources(File source, String title) throws IOException {
         Files.createDirectories(Path.of(IMAGE_DIR));
 
         String extension = source.getName()

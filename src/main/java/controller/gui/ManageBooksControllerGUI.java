@@ -27,7 +27,6 @@ public class ManageBooksControllerGUI {
     private ManageBooksCardFactory cardFactory;
     
     private boolean initialized = false;
-    private static final String SUCCESS = "Successo", ERROR = "Errore";
 
     public void setStateManager(StateManager stateManager) {
         this.stateManager = stateManager;
@@ -46,7 +45,7 @@ public class ManageBooksControllerGUI {
     @FXML
     public void handleSearch() {
         if (cardFactory == null) {
-            showError("Attenzione", "Sistema non ancora inizializzato");
+            showError("Sistema non ancora inizializzato");
             return;
         }
 
@@ -113,9 +112,9 @@ public class ManageBooksControllerGUI {
         try {
             appController.increaseStock(bookId, quantity);
             loadBooks(); // Ricarica la lista
-            showSuccess(SUCCESS, "Stock aumentato di " + quantity + " libri");
+            showSuccess("Stock aumentato di " + quantity + " libri");
         } catch (Exception e) {
-            showError(ERROR, "Errore nell'aumentare lo stock: " + e.getMessage());
+            showError("Errore nell'aumentare lo stock: " + e.getMessage());
         }
     }
 
@@ -125,12 +124,12 @@ public class ManageBooksControllerGUI {
             if (book != null && book.getStock() >= quantity) {
                 appController.decreaseStock(bookId, quantity);
                 loadBooks(); // Ricarica la lista
-                showSuccess(SUCCESS, "Stock diminuito di " + quantity + " libri");
+                showSuccess("Stock diminuito di " + quantity + " libri");
             } else {
-                showError(ERROR, "Stock insufficiente");
+                showError("Stock insufficiente");
             }
         } catch (Exception e) {
-            showError(ERROR, "Errore nel diminuire lo stock: " + e.getMessage());
+            showError("Errore nel diminuire lo stock: " + e.getMessage());
         }
     }
 
@@ -145,21 +144,21 @@ public class ManageBooksControllerGUI {
             if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
                 appController.deleteBook(bookId);
                 loadBooks(); // Ricarica la lista
-                showSuccess(SUCCESS, "Libro eliminato con successo");
+                showSuccess("Libro eliminato con successo");
             }
         } catch (Exception e) {
-            showError(ERROR, "Errore nell'eliminare il libro: " + e.getMessage());
+            showError("Errore nell'eliminare il libro: " + e.getMessage());
         }
     }
 
     // ===== GESTIONE STATI =====
 
-    private void showSuccess(String title, String message) {
+    private void showSuccess(String message) {
         SuccessState successState = new SuccessState(stateManager, message);
         stateManager.setState(successState);
     }
 
-    private void showError(String title, String message) {
+    private void showError(String message) {
         ErrorState errorState = new ErrorState(stateManager, message);
         stateManager.setState(errorState);
     }
