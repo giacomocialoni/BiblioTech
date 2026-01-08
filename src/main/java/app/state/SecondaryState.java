@@ -6,7 +6,7 @@ package app.state;
  */
 public abstract class SecondaryState extends AbstractState {
     
-    public SecondaryState(StateManager stateManager) {
+    protected SecondaryState(StateManager stateManager) {
         super(stateManager, StateType.SECONDARY);
     }
     

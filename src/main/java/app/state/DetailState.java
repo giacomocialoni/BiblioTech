@@ -6,7 +6,7 @@ package app.state;
  */
 public abstract class DetailState extends AbstractState {
     
-    public DetailState(StateManager stateManager) {
+    protected DetailState(StateManager stateManager) {
         super(stateManager, StateType.DETAIL);
     }
     

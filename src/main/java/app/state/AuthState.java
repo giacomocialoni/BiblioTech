@@ -6,7 +6,7 @@ package app.state;
  */
 public abstract class AuthState extends AbstractState {
     
-    public AuthState(StateManager stateManager) {
+    protected AuthState(StateManager stateManager) {
         super(stateManager, StateType.AUTH_FLOW);
     }
     
