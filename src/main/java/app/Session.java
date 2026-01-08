@@ -5,7 +5,7 @@ import model.Account;
 public final class Session {
 
     private static final Session INSTANCE = new Session();
-    private Account loggedUser;
+    private Account loggedAccount;
 
     private Session() {
         // Singleton intenzionale
@@ -16,19 +16,19 @@ public final class Session {
     }
 
     public void login(Account account) {
-        this.loggedUser = account;
+        this.loggedAccount = account;
     }
 
     public void logout() {
-        this.loggedUser = null;
+        this.loggedAccount = null;
     }
 
     public boolean isLoggedIn() {
-        return loggedUser != null;
+        return loggedAccount != null;
     }
 
     public Account getLoggedUser() {
-        return loggedUser;
+        return loggedAccount;
     }
 
     public boolean isGuest() {
@@ -36,18 +36,18 @@ public final class Session {
     }
 
     public boolean isUser() {
-        return isLoggedIn() && "logged_user".equals(loggedUser.getRole());
+        return isLoggedIn() && "logged_user".equals(loggedAccount.getRole());
     }
 
     public boolean isAdmin() {
-        return isLoggedIn() && "admin".equals(loggedUser.getRole());
+        return isLoggedIn() && "admin".equals(loggedAccount.getRole());
     }
 
     public String getUserEmail() {
-        return isLoggedIn() ? loggedUser.getEmail() : null;
+        return isLoggedIn() ? loggedAccount.getEmail() : null;
     }
 
     public String getUserRole() {
-        return isLoggedIn() ? loggedUser.getRole() : null;
+        return isLoggedIn() ? loggedAccount.getRole() : null;
     }
 }
