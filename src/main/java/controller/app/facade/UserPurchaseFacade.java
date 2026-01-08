@@ -23,13 +23,11 @@ public class UserPurchaseFacade {
         
         // Utente deve essere loggato
         if (!session.isLoggedIn()) {
-            logger.warn("Utente non loggato tenta acquisto");
             return BuyResult.NOT_LOGGED;
         }
 
         // Solo utenti normali possono comprare (admin NO)
         if (!session.isUser()) {
-            logger.warn("Admin tenta acquisto - Email: {}", session.getUserEmail());
             return BuyResult.UNAUTHORIZED;
         }
 
@@ -49,14 +47,11 @@ public class UserPurchaseFacade {
             return false;
         }
         boolean hasPurchased = purchaseController.hasPurchasedBook(session.getUserEmail(), bookId);
-        logger.debug("Verifica acquisto - Utente: {}, Libro: {}, Risultato: {}", 
-                    session.getUserEmail(), bookId, hasPurchased);
         return hasPurchased;
     }
 
     public boolean canPurchase() {
         boolean canPurchase = session.isUser();
-        logger.debug("Utente può acquistare? {}", canPurchase);
         return canPurchase;
     }
 
