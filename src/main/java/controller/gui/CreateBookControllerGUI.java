@@ -152,7 +152,6 @@ public class CreateBookControllerGUI {
         Path target = Path.of(IMAGE_DIR, fileName);
         Files.copy(source.toPath(), target, StandardCopyOption.REPLACE_EXISTING);
 
-        logger.info("Image saved in resources: {}", fileName);
         return fileName;
     }
 

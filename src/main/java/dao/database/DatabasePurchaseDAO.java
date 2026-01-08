@@ -13,326 +13,345 @@ import java.util.List;
 
 public class DatabasePurchaseDAO implements PurchaseDAO {
 
-    private final DBConnection dbConnection;
+    private static final String PURCHASE_COLUMNS = "id, user_email, book_id, quantity, status, status_date";
+    private static final String BASE_SELECT = "SELECT " + PURCHASE_COLUMNS + " FROM purchases ";
 
-    // Costanti per le query SQL complete (non costruite dinamicamente)
-    private static final String SELECT_ALL_COLUMNS = "SELECT id, user_email, book_id, status, status_date FROM purchases";
-    
-    // Query specifiche
-    private static final String SQL_GET_BY_ID = SELECT_ALL_COLUMNS + " WHERE id = ?";
-    private static final String SQL_GET_ALL = SELECT_ALL_COLUMNS;
-    private static final String SQL_GET_BY_USER = SELECT_ALL_COLUMNS + " WHERE user_email = ?";
-    private static final String SQL_GET_BY_BOOK = SELECT_ALL_COLUMNS + " WHERE book_id = ?";
-    private static final String SQL_GET_BY_STATUS = SELECT_ALL_COLUMNS + " WHERE status = ?";
-    private static final String SQL_SEARCH_BY_USER = SELECT_ALL_COLUMNS + " WHERE LOWER(user_email) LIKE ?";
-    private static final String SQL_SEARCH_BY_BOOK = SELECT_ALL_COLUMNS + " JOIN books b ON book_id = b.id WHERE LOWER(b.title) LIKE ?";
-    
-    private static final String SQL_ADD = "INSERT INTO purchases (user_email, book_id, status, purchase_date) VALUES (?, ?, 'RESERVED', CURRENT_TIMESTAMP)";
-    private static final String SQL_UPDATE_STATUS = "UPDATE purchases SET status = ? WHERE id = ?";
-    private static final String SQL_DELETE = "DELETE FROM purchases WHERE id = ?";
-    private static final String SQL_HAS_PURCHASED = "SELECT 1 FROM purchases WHERE user_email = ? AND book_id = ? AND status = 'PURCHASED' LIMIT 1";
-    private static final String SQL_GET_BOOK_IDS = "SELECT book_id FROM purchases WHERE user_email = ? AND status = 'PURCHASED'";
-    private static final String SQL_COUNT = "SELECT COUNT(*) FROM purchases WHERE user_email = ? AND status = 'PURCHASED'";
-    private static final String SQL_TOTAL_SPENT = "SELECT COALESCE(SUM(price), 0) FROM purchases WHERE user_email = ? AND status = 'PURCHASED'";
+    private final DBConnection dbConnection;
+    private static final org.slf4j.Logger logger = 
+        org.slf4j.LoggerFactory.getLogger(DatabasePurchaseDAO.class);
 
     public DatabasePurchaseDAO(DBConnection dbConnection) {
         this.dbConnection = dbConnection;
     }
 
-    /* ================= CRUD ================= */
-
+    /* =======================
+       CREATE (con diminuzione stock)
+       ======================= */
     @Override
-    public void addPurchase(String userEmail, int bookId) throws DAOException {
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SQL_ADD)) {
-
-            stmt.setString(1, userEmail);
-            stmt.setInt(2, bookId);
-            stmt.executeUpdate();
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante l'inserimento dell'acquisto per utente " + userEmail, e);
+    public void addPurchase(String userEmail, int bookId, int quantity) throws DAOException {
+        if (quantity <= 0) {
+            throw new DAOException("Quantità non valida: " + quantity);
         }
-    }
 
-    @Override
-    public void updatePurchaseStatus(int purchaseId, PurchaseStatus status)
-            throws DAOException {
-
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SQL_UPDATE_STATUS)) {
-
-            stmt.setString(1, status.name());
-            stmt.setInt(2, purchaseId);
-
-            int updated = stmt.executeUpdate();
-            if (updated == 0) {
-                String errorMessage = "Acquisto con ID " + purchaseId + " non trovato per l'aggiornamento";
-                throw new RecordNotFoundException(errorMessage);
+        executeTransactionalOperation(conn -> {
+            // 1. Verifica che lo stock sia sufficiente
+            String checkStockSql = "SELECT stock FROM books WHERE id = ? FOR UPDATE";
+            int currentStock;
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkStockSql)) {
+                checkStmt.setInt(1, bookId);
+                try (ResultSet rs = checkStmt.executeQuery()) {
+                    if (!rs.next()) {
+                        throw new RecordNotFoundException("Libro non trovato: " + bookId);
+                    }
+                    currentStock = rs.getInt("stock");
+                    if (currentStock < quantity) {
+                        throw new DAOException("Stock insufficiente: " + currentStock + " < " + quantity);
+                    }
+                }
             }
 
-        } catch (SQLException e) {
-            String errorMessage = "Errore durante l'aggiornamento dello stato dell'acquisto ID " + purchaseId + " a " + status;
-            throw new DAOException(errorMessage, e);
-        }
-    }
-
-    @Override
-    public void rejectPurchase(int purchaseId) throws DAOException {
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SQL_DELETE)) {
-
-            stmt.setInt(1, purchaseId);
-            int deleted = stmt.executeUpdate();
-
-            if (deleted == 0) {
-                throw new RecordNotFoundException("Acquisto con ID " + purchaseId + " non trovato per la cancellazione");
+            // 2. Diminuisce lo stock
+            String updateStockSql = "UPDATE books SET stock = stock - ? WHERE id = ?";
+            try (PreparedStatement stockStmt = conn.prepareStatement(updateStockSql)) {
+                stockStmt.setInt(1, quantity);
+                stockStmt.setInt(2, bookId);
+                int rowsUpdated = stockStmt.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new RecordNotFoundException("Libro non trovato per aggiornamento stock: " + bookId);
+                }
             }
 
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante la cancellazione dell'acquisto ID " + purchaseId, e);
-        }
+            // 3. Crea la prenotazione
+            String insertSql = "INSERT INTO purchases (user_email, book_id, quantity, status, status_date) VALUES (?, ?, ?, 'RESERVED', CURRENT_DATE)";
+            try (PreparedStatement insertStmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+                insertStmt.setString(1, userEmail);
+                insertStmt.setInt(2, bookId);
+                insertStmt.setInt(3, quantity);
+                insertStmt.executeUpdate();
+            }
+        });
     }
 
-    /* ============== RECUPERO ============== */
-
+    /* =======================
+       READ
+       ======================= */
     @Override
-    public Purchase getPurchaseById(int purchaseId)
-            throws DAOException {
-
+    public Purchase getPurchaseById(int purchaseId) throws DAOException {
+        String sql = BASE_SELECT + " WHERE id = ?";
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SQL_GET_BY_ID)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, purchaseId);
-
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return extractPurchaseFromResultSet(rs);
                 }
+                throw new RecordNotFoundException("Acquisto con ID " + purchaseId + " non trovato");
             }
-
-            String errorMessage = "Acquisto con ID " + purchaseId + " non trovato";
-            throw new RecordNotFoundException(errorMessage);
-
         } catch (SQLException e) {
-            String errorMessage = "Errore durante il recupero dell'acquisto con ID " + purchaseId;
-            throw new DAOException(errorMessage, e);
+            throw new DAOException("Errore recupero acquisto ID " + purchaseId, e);
         }
     }
 
     @Override
     public List<Purchase> getPurchasesByUser(String userEmail) throws DAOException {
-        String sql = SQL_GET_BY_USER;
-        List<Purchase> purchases = new ArrayList<>();
-
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, userEmail);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    purchases.add(extractPurchaseFromResultSet(rs));
-                }
-            }
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore durante il recupero degli acquisti per l'utente " + userEmail, e);
-        }
-
-        return purchases;
+        return executeQueryWithStringParam(BASE_SELECT + " WHERE user_email = ? ORDER BY status_date DESC", userEmail);
     }
 
     @Override
     public List<Purchase> getPurchasesByBook(int bookId) throws DAOException {
-        try {
-            return executeQueryWithIntParam(SQL_GET_BY_BOOK, bookId);
-        } catch (DAOException e) {
-            throw new DAOException("Errore durante il recupero degli acquisti per il libro ID " + bookId, e);
-        }
+        return executeQueryWithIntParam(BASE_SELECT + " WHERE book_id = ? ORDER BY status_date DESC", bookId);
     }
 
     @Override
     public List<Purchase> getPurchasesByStatus(PurchaseStatus status) throws DAOException {
-        try {
-            return executeQueryWithStringParam(SQL_GET_BY_STATUS, status.name());
-        } catch (DAOException e) {
-            throw new DAOException("Errore durante il recupero degli acquisti con stato " + status, e);
-        }
+        return executeQueryWithStringParam(BASE_SELECT + " WHERE status = ? ORDER BY status_date DESC", status.name());
     }
 
     @Override
     public List<Purchase> getAllPurchases() throws DAOException {
+        List<Purchase> purchases = new ArrayList<>();
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SQL_GET_ALL);
+             PreparedStatement stmt = conn.prepareStatement(BASE_SELECT + " ORDER BY status_date DESC");
              ResultSet rs = stmt.executeQuery()) {
 
-            List<Purchase> purchases = new ArrayList<>();
             while (rs.next()) {
                 purchases.add(extractPurchaseFromResultSet(rs));
             }
-            return purchases;
-
         } catch (SQLException e) {
-            throw new DAOException("Errore durante il recupero di tutti gli acquisti", e);
+            throw new DAOException("Errore recupero tutti gli acquisti", e);
+        }
+        return purchases;
+    }
+
+    /* =======================
+       UPDATE (solo cambio status)
+       ======================= */
+    @Override
+    public void updatePurchaseStatus(int purchaseId, PurchaseStatus status) throws DAOException {
+        
+        String sql = "UPDATE purchases SET status = ?, status_date = CURRENT_DATE WHERE id = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, status.name());
+            stmt.setInt(2, purchaseId);
+
+            int rowsUpdated = stmt.executeUpdate();
+            if (rowsUpdated == 0) {
+                throw new RecordNotFoundException("Acquisto con ID " + purchaseId + " non trovato");
+            }
+            
+        } catch (SQLException e) {
+            throw new DAOException("Errore aggiornamento stato acquisto", e);
         }
     }
 
-    /* ============== RICERCA ============== */
+    /* =======================
+       REJECT (con ripristino stock)
+       ======================= */
+    @Override
+    public void rejectPurchase(int purchaseId) throws DAOException {
 
+        executeTransactionalOperation(conn -> {
+            int bookId, quantity;
+
+            // 1. Recupera i dati dell'acquisto
+            String selectSql = "SELECT book_id, quantity FROM purchases WHERE id = ? AND status = 'RESERVED' FOR UPDATE";
+            try (PreparedStatement stmt = conn.prepareStatement(selectSql)) {
+                stmt.setInt(1, purchaseId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (!rs.next()) {
+                        throw new RecordNotFoundException("Acquisto non trovato o già processato: " + purchaseId);
+                    }
+                    bookId = rs.getInt("book_id");
+                    quantity = rs.getInt("quantity");
+                }
+            }
+
+            // 2. Ripristina lo stock
+            String updateStockSql = "UPDATE books SET stock = stock + ? WHERE id = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(updateStockSql)) {
+                stmt.setInt(1, quantity);
+                stmt.setInt(2, bookId);
+                int rowsUpdated = stmt.executeUpdate();
+                if (rowsUpdated == 0) {
+                    throw new RecordNotFoundException("Libro non trovato per ripristino stock: " + bookId);
+                }
+            }
+
+            // 3. Elimina la prenotazione
+            String deleteSql = "DELETE FROM purchases WHERE id = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(deleteSql)) {
+                stmt.setInt(1, purchaseId);
+                stmt.executeUpdate();
+            }
+        });
+    }
+
+    /* =======================
+       RICERCA
+       ======================= */
     @Override
     public List<Purchase> searchPurchasesByUser(String searchText) throws DAOException {
-        try {
-            return executeQueryWithStringParam(SQL_SEARCH_BY_USER, "%" + searchText.toLowerCase() + "%");
-        } catch (DAOException e) {
-            throw new DAOException("Errore durante la ricerca degli acquisti per utente: " + searchText, e);
-        }
+        String sql = BASE_SELECT + " WHERE LOWER(user_email) LIKE ? ORDER BY status_date DESC";
+        return executeQueryWithStringParam(sql, "%" + safeLower(searchText) + "%");
     }
 
     @Override
     public List<Purchase> searchPurchasesByBook(String searchText) throws DAOException {
-        try {
-            return executeQueryWithStringParam(SQL_SEARCH_BY_BOOK, "%" + searchText.toLowerCase() + "%");
-        } catch (DAOException e) {
-            throw new DAOException("Errore durante la ricerca degli acquisti per libro: " + searchText, e);
-        }
+        String sql = BASE_SELECT + " JOIN books b ON book_id = b.id WHERE LOWER(b.title) LIKE ? ORDER BY p.status_date DESC";
+        return executeQueryWithStringParam(sql, "%" + safeLower(searchText) + "%");
     }
 
-    /* ============== VERIFICHE ============== */
-
+    /* =======================
+       VERIFICHE E STATISTICHE
+       ======================= */
     @Override
-    public boolean hasUserPurchasedBook(String userEmail, int bookId)
-            throws DAOException {
-
+    public boolean hasUserPurchasedBook(String userEmail, int bookId) throws DAOException {
+        String sql = "SELECT 1 FROM purchases WHERE user_email = ? AND book_id = ? AND status = 'PURCHASED' LIMIT 1";
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SQL_HAS_PURCHASED)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, userEmail);
             stmt.setInt(2, bookId);
-
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next();
             }
-
         } catch (SQLException e) {
-            String errorMessage = "Errore durante la verifica dell'acquisto per utente " + userEmail + " e libro " + bookId;
-            throw new DAOException(errorMessage, e);
+            throw new DAOException("Errore verifica acquisto utente/libro", e);
         }
     }
 
     @Override
-    public List<Integer> getPurchasedBookIdsByUser(String userEmail)
-            throws DAOException {
-
+    public List<Integer> getPurchasedBookIdsByUser(String userEmail) throws DAOException {
+        String sql = "SELECT book_id FROM purchases WHERE user_email = ? AND status = 'PURCHASED'";
+        List<Integer> list = new ArrayList<>();
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SQL_GET_BOOK_IDS)) {
-
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, userEmail);
-
-            List<Integer> ids = new ArrayList<>();
             try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    ids.add(rs.getInt("book_id"));
-                }
+                while (rs.next()) list.add(rs.getInt("book_id"));
             }
-            return ids;
-
         } catch (SQLException e) {
-            String errorMessage = "Errore durante il recupero degli ID libri acquistati da " + userEmail;
-            throw new DAOException(errorMessage, e);
+            throw new DAOException(e);
         }
+        return list;
     }
-
-    /* ============== STATISTICHE ============== */
 
     @Override
     public int countPurchasesByUser(String userEmail) throws DAOException {
+        String sql = "SELECT SUM(quantity) FROM purchases WHERE user_email = ? AND status = 'PURCHASED'";
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SQL_COUNT)) {
-
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, userEmail);
-
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-                return 0;
+                return rs.next() ? rs.getInt(1) : 0;
             }
-
         } catch (SQLException e) {
-            String errorMessage = "Errore durante il conteggio degli acquisti per l'utente " + userEmail;
-            throw new DAOException(errorMessage, e);
+            throw new DAOException(e);
         }
     }
 
     @Override
     public double getTotalSpentByUser(String userEmail) throws DAOException {
+        String sql = "SELECT COALESCE(SUM(b.price * p.quantity), 0) " +
+                     "FROM purchases p JOIN books b ON p.book_id = b.id " +
+                     "WHERE p.user_email = ? AND p.status = 'PURCHASED'";
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SQL_TOTAL_SPENT)) {
-
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, userEmail);
-
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getDouble(1);
-                }
-                return 0.0;
+                return rs.next() ? rs.getDouble(1) : 0.0;
             }
-
         } catch (SQLException e) {
-            String errorMessage = "Errore durante il calcolo della spesa totale per l'utente " + userEmail;
-            throw new DAOException(errorMessage, e);
+            throw new DAOException(e);
         }
     }
 
-    /* ============== METODI DI SUPPORTO ============== */
+    /* =======================
+       METODI DI SUPPORTO
+       ======================= */
+    private Purchase extractPurchaseFromResultSet(ResultSet rs) throws SQLException {
+        return new Purchase(
+                rs.getInt("id"),
+                rs.getString("user_email"),
+                rs.getInt("book_id"),
+                rs.getInt("quantity"),
+                rs.getDate("status_date") != null ? rs.getDate("status_date").toLocalDate() : LocalDate.now(),
+                PurchaseStatus.valueOf(rs.getString("status"))
+        );
+    }
 
     private List<Purchase> executeQueryWithStringParam(String sql, String param) throws DAOException {
+        List<Purchase> list = new ArrayList<>();
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, param);
+            if (param != null) stmt.setString(1, param);
 
-            List<Purchase> list = new ArrayList<>();
             try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    list.add(extractPurchaseFromResultSet(rs));
-                }
+                while (rs.next()) list.add(extractPurchaseFromResultSet(rs));
             }
-            return list;
 
+            return list;
         } catch (SQLException e) {
-            String errorMessage = "Errore durante l'esecuzione della query SQL con parametro stringa";
-            throw new DAOException(errorMessage, e);
+            throw new DAOException("Errore esecuzione query", e);
         }
     }
 
     private List<Purchase> executeQueryWithIntParam(String sql, int param) throws DAOException {
+        List<Purchase> list = new ArrayList<>();
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, param);
 
-            List<Purchase> list = new ArrayList<>();
             try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    list.add(extractPurchaseFromResultSet(rs));
-                }
+                while (rs.next()) list.add(extractPurchaseFromResultSet(rs));
             }
-            return list;
 
+            return list;
         } catch (SQLException e) {
-            String errorMessage = "Errore durante l'esecuzione della query SQL con parametro intero";
-            throw new DAOException(errorMessage, e);
+            throw new DAOException("Errore esecuzione query", e);
         }
     }
 
-    private Purchase extractPurchaseFromResultSet(ResultSet rs) throws SQLException {
-        int id = rs.getInt("id");
-        String userEmail = rs.getString("user_email");
-        int bookId = rs.getInt("book_id");
-        LocalDate statusDate = rs.getDate("status_date") != null ? rs.getDate("status_date").toLocalDate() : null;
-        PurchaseStatus status = PurchaseStatus.valueOf(rs.getString("status"));
+    private String safeLower(String text) {
+        return text == null ? "" : text.toLowerCase();
+    }
 
-        return new Purchase(id, userEmail, bookId, statusDate, status);
+    private void executeTransactionalOperation(TransactionOperation operation) throws DAOException {
+        Connection conn = null;
+        try {
+            conn = dbConnection.getConnection();
+            conn.setAutoCommit(false);
+            operation.execute(conn);
+            conn.commit();
+        } catch (SQLException | DAOException e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                    logger.error("Transazione fallita, rollback eseguito", e);
+                } catch (SQLException rollbackEx) {
+                    logger.error("Errore durante il rollback", rollbackEx);
+                }
+            }
+            throw new DAOException("Errore durante l'esecuzione della transazione", e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.error("Errore chiusura connessione", e);
+                }
+            }
+        }
+    }
+
+    @FunctionalInterface
+    private interface TransactionOperation {
+        void execute(Connection conn) throws DAOException, SQLException;
     }
 }

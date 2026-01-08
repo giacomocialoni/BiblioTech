@@ -7,13 +7,15 @@ public class Purchase {
     private int id;
     private String userEmail;
     private int bookId;
+    private int quantity;
     private LocalDate statusDate;
     private PurchaseStatus status;
 
-    public Purchase(int id, String userEmail, int bookId, LocalDate statusDate, PurchaseStatus status) {
+    public Purchase(int id, String userEmail, int bookId, int quantity, LocalDate statusDate, PurchaseStatus status) {
         this.id = id;
         this.userEmail = userEmail;
         this.bookId = bookId;
+        this.quantity = quantity;
         this.statusDate = statusDate;
         this.status = status;
     }
@@ -22,6 +24,7 @@ public class Purchase {
     public int getId() { return id; }
     public String getUserEmail() { return userEmail; }
     public int getBookId() { return bookId; }
+    public int getQuantity() { return quantity; }
     public LocalDate getStatusDate() { return statusDate; }
     public PurchaseStatus getStatus() { return status; }
 
@@ -29,18 +32,17 @@ public class Purchase {
     public void setId(int id) { this.id = id; }
     public void setUserEmail(String userEmail) { this.userEmail = userEmail; }
     public void setBookId(int bookId) { this.bookId = bookId; }
+    public void setQuantity(int quantity) { this.quantity = quantity; }
     public void setStatusDate(LocalDate statusDate) { this.statusDate = statusDate; }
-    public void setStatus(PurchaseStatus status) { 
-        this.status = status; 
-    }
-    
-    // Metodi utility
+    public void setStatus(PurchaseStatus status) { this.status = status; }
+
+    // Utility
     public boolean isPurchased() { return status == PurchaseStatus.PURCHASED; }
     public boolean isReserved() { return status == PurchaseStatus.RESERVED; }
-    
+
     @Override
     public String toString() {
-        return "Purchase [id=" + id + ", userEmail=" + userEmail + ", bookId=" + bookId 
-               + ", statusDate=" + statusDate + ", status=" + status + "]";
+        return "Purchase [id=" + id + ", userEmail=" + userEmail + ", bookId=" + bookId
+               + ", quantity=" + quantity + ", statusDate=" + statusDate + ", status=" + status + "]";
     }
 }

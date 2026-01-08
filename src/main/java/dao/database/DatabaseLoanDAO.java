@@ -151,17 +151,10 @@ public class DatabaseLoanDAO implements LoanDAO {
                 WHERE id = ?
             """;
 
-            String updateBookSql = """
-                UPDATE books
-                SET stock = stock - 1
-                WHERE id = (SELECT book_id FROM loans WHERE id = ?)
-            """;
-
             LocalDate today = LocalDate.now();
             LocalDate returningDate = today.plusDays(Constants.LOANING_DAYS);
 
-            try (PreparedStatement loanStmt = conn.prepareStatement(updateLoanSql);
-                 PreparedStatement bookStmt = conn.prepareStatement(updateBookSql)) {
+            try (PreparedStatement loanStmt = conn.prepareStatement(updateLoanSql)) {
 
                 loanStmt.setString(1, LoanStatus.LOANED.name());
                 loanStmt.setDate(2, Date.valueOf(today));
@@ -171,9 +164,6 @@ public class DatabaseLoanDAO implements LoanDAO {
                 if (loanStmt.executeUpdate() == 0) {
                     throw new RecordNotFoundException("Prestito non trovato: " + loanId);
                 }
-
-                bookStmt.setInt(1, loanId);
-                bookStmt.executeUpdate();
             }
         });
     }
@@ -182,7 +172,12 @@ public class DatabaseLoanDAO implements LoanDAO {
     public void returnLoan(int loanId) throws DAOException {
         executeTransactionalOperation(conn -> {
 
-            String updateLoanSql = "UPDATE loans SET status = ? WHERE id = ?";
+            String updateLoanSql = """
+                UPDATE loans
+                SET status = ?
+                WHERE id = ?
+            """;
+
             String updateBookSql = """
                 UPDATE books
                 SET stock = stock + 1
@@ -226,20 +221,31 @@ public class DatabaseLoanDAO implements LoanDAO {
 
     @Override
     public void deleteLoan(int loanId) throws DAOException {
-        String sql = "DELETE FROM loans WHERE id = ?";
+        executeTransactionalOperation(conn -> {
 
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            String deleteLoanSql = "DELETE FROM loans WHERE id = ?";
 
-            stmt.setInt(1, loanId);
+            String updateBookSql = """
+                UPDATE books
+                SET stock = stock + 1
+                WHERE id = (SELECT book_id FROM loans WHERE id = ?)
+            """;
 
-            if (stmt.executeUpdate() == 0) {
-                throw new RecordNotFoundException("Prestito non trovato: " + loanId);
+            try (PreparedStatement bookStmt = conn.prepareStatement(updateBookSql);
+                 PreparedStatement loanStmt = conn.prepareStatement(deleteLoanSql)) {
+
+                // prima ripristino lo stock
+                bookStmt.setInt(1, loanId);
+                bookStmt.executeUpdate();
+
+                // poi elimino il prestito
+                loanStmt.setInt(1, loanId);
+
+                if (loanStmt.executeUpdate() == 0) {
+                    throw new RecordNotFoundException("Prestito non trovato: " + loanId);
+                }
             }
-
-        } catch (SQLException e) {
-            throw new DAOException("Errore eliminazione prestito", e);
-        }
+        });
     }
 
     /* =======================
@@ -387,7 +393,7 @@ public class DatabaseLoanDAO implements LoanDAO {
     }
 
     @FunctionalInterface
-    private interface TransactionalOperation {
+	public interface TransactionalOperation {
         void execute(Connection conn) throws SQLException, DAOException;
     }
 }

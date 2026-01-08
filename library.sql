@@ -67,10 +67,11 @@ CREATE TABLE IF NOT EXISTS `loans` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Tabella purchases
-CREATE TABLE IF NOT EXISTS `purchases` (
+CREATE TABLE `purchases` (
   `id` int NOT NULL AUTO_INCREMENT,
   `user_email` varchar(100) NOT NULL,
   `book_id` int NOT NULL,
+  `quantity` int NOT NULL DEFAULT '1',
   `status` enum('RESERVED','PURCHASED') NOT NULL DEFAULT 'RESERVED',
   `status_date` date NOT NULL DEFAULT (curdate()),
   PRIMARY KEY (`id`),
@@ -78,7 +79,7 @@ CREATE TABLE IF NOT EXISTS `purchases` (
   KEY `book_id` (`book_id`),
   CONSTRAINT `purchases_ibfk_1` FOREIGN KEY (`user_email`) REFERENCES `users` (`email`) ON DELETE CASCADE,
   CONSTRAINT `purchases_ibfk_2` FOREIGN KEY (`book_id`) REFERENCES `books` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Tabella wishlist
 CREATE TABLE IF NOT EXISTS `wishlist` (

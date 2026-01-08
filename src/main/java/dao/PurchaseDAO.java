@@ -10,7 +10,7 @@ public interface PurchaseDAO {
 
     /* ================= CRUD ================= */
 
-    void addPurchase(String userEmail, int bookId) throws DAOException;
+    void addPurchase(String userEmail, int bookId, int quantity) throws DAOException;
     void updatePurchaseStatus(int purchaseId, PurchaseStatus status)
             throws DAOException;
     void rejectPurchase(int purchaseId)

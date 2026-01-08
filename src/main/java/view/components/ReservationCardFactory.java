@@ -26,7 +26,7 @@ public class ReservationCardFactory {
             book,
             purchase.getUserEmail(),
             "Vendita",
-            "Quantità: 1",
+            "Quantità: " + purchase.getQuantity(),
             "Prezzo: €" + String.format("%.2f", book.getPrice()),
             onAccept,
             onReject

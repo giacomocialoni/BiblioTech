@@ -16,23 +16,22 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
     private final List<Purchase> purchases = new ArrayList<>();
     private int nextId = 1;
 
-    public InMemoryPurchaseDAO() {
-        // Costruttore vuoto
-    }
+    public InMemoryPurchaseDAO() {}
 
     public static InMemoryPurchaseDAO getInstance() {
-        if (instance == null) {
-            instance = new InMemoryPurchaseDAO();
-        }
+        if (instance == null) instance = new InMemoryPurchaseDAO();
         return instance;
     }
 
     @Override
-    public void addPurchase(String userEmail, int bookId) throws DAOException {
+    public void addPurchase(String userEmail, int bookId, int quantity) throws DAOException {
+        if (quantity <= 0) throw new DAOException("Quantità non valida: " + quantity);
+
         Purchase purchase = new Purchase(
                 nextId++,
                 userEmail,
                 bookId,
+                quantity,
                 LocalDate.now(),
                 PurchaseStatus.RESERVED
         );
@@ -40,8 +39,7 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
     }
 
     @Override
-    public void updatePurchaseStatus(int purchaseId, PurchaseStatus status) 
-            throws DAOException {
+    public void updatePurchaseStatus(int purchaseId, PurchaseStatus status) throws DAOException {
         Purchase purchase = getPurchaseById(purchaseId);
         purchase.setStatus(status);
         purchase.setStatusDate(LocalDate.now());
@@ -50,15 +48,11 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
     @Override
     public void rejectPurchase(int purchaseId) throws DAOException {
         boolean removed = purchases.removeIf(p -> p.getId() == purchaseId);
-        
-        if (!removed) {
-            throw new RecordNotFoundException("Acquisto con ID " + purchaseId + " non trovato");
-        }
+        if (!removed) throw new RecordNotFoundException("Acquisto con ID " + purchaseId + " non trovato");
     }
 
     @Override
-    public Purchase getPurchaseById(int purchaseId) 
-            throws DAOException {
+    public Purchase getPurchaseById(int purchaseId) throws DAOException {
         return purchases.stream()
                 .filter(p -> p.getId() == purchaseId)
                 .findFirst()
@@ -93,31 +87,29 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
 
     @Override
     public List<Purchase> searchPurchasesByUser(String searchText) throws DAOException {
-        String lowerSearch = searchText.toLowerCase();
+        String lower = searchText.toLowerCase();
         return purchases.stream()
-                .filter(p -> p.getUserEmail().toLowerCase().contains(lowerSearch))
+                .filter(p -> p.getUserEmail().toLowerCase().contains(lower))
                 .toList();
     }
 
     @Override
     public List<Purchase> searchPurchasesByBook(String searchText) throws DAOException {
-        // In memoria non abbiamo informazioni sui libri, solo bookId
         return new ArrayList<>();
     }
 
     @Override
     public boolean hasUserPurchasedBook(String userEmail, int bookId) throws DAOException {
         return purchases.stream()
-                .filter(p -> p.getUserEmail().equals(userEmail))
-                .filter(p -> p.getBookId() == bookId)
-                .anyMatch(p -> p.getStatus() == PurchaseStatus.PURCHASED);
+                .anyMatch(p -> p.getUserEmail().equals(userEmail)
+                            && p.getBookId() == bookId
+                            && p.getStatus() == PurchaseStatus.PURCHASED);
     }
 
     @Override
     public List<Integer> getPurchasedBookIdsByUser(String userEmail) throws DAOException {
         return purchases.stream()
-                .filter(p -> p.getUserEmail().equals(userEmail))
-                .filter(p -> p.getStatus() == PurchaseStatus.PURCHASED)
+                .filter(p -> p.getUserEmail().equals(userEmail) && p.getStatus() == PurchaseStatus.PURCHASED)
                 .map(Purchase::getBookId)
                 .toList();
     }
@@ -125,14 +117,12 @@ public class InMemoryPurchaseDAO implements PurchaseDAO {
     @Override
     public int countPurchasesByUser(String userEmail) throws DAOException {
         return (int) purchases.stream()
-                .filter(p -> p.getUserEmail().equals(userEmail))
-                .filter(p -> p.getStatus() == PurchaseStatus.PURCHASED)
+                .filter(p -> p.getUserEmail().equals(userEmail) && p.getStatus() == PurchaseStatus.PURCHASED)
                 .count();
     }
 
     @Override
     public double getTotalSpentByUser(String userEmail) throws DAOException {
-        // In memoria non abbiamo i prezzi dei libri
         return 0.0;
     }
 }

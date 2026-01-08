@@ -37,12 +37,10 @@ public class SignInController {
          
      } catch (EmailAlreadyRegisteredException e) {
          logger.warn("Tentativo di registrazione con email già esistente: {}", email);
-         logRegistrationAttempt(email, "duplicate_email");
          
          throw e;
          
      } catch (DAOException e) {
-         logRegistrationAttempt(email, "database_error");
          throw new DAOException("Errore temporaneo nel sistema. Riprova tra qualche minuto.", e);
      }
 
@@ -50,9 +48,6 @@ public class SignInController {
          logger.error("Registrazione fallita senza eccezione per {}", email);
          throw new DAOException("Registrazione fallita per motivi sconosciuti");
      }
-
-     logger.info("Nuovo utente registrato: {} {} ({})", firstName, lastName, email);
-     logRegistrationAttempt(email, "success");
 
      // Login automatico dopo registrazione
      Account account = new User(email, password, firstName, lastName);
@@ -69,10 +64,5 @@ public class SignInController {
      } catch (IncorrectDataException e) {
          throw new DAOException("Errore nella creazione dell'account", e);
      }
- }
- 
- private void logRegistrationAttempt(String email, String outcome) {
-     logger.info("Tentativo registrazione - Email: {}, Esito: {}, IP: {}, Ora: {}", 
-                email, outcome, "unknown", new java.util.Date());
  }
 }
