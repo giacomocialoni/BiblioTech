@@ -39,22 +39,21 @@ public class DatabaseBookDAO implements BookDAO {
 
     /* ======================= SQL CONSTANTS ======================= */
     private static final String SELECT_PREFIX = "SELECT ";
+    private static final String FROM = " FROM books";
+    private static final String WHERE = " WHERE ";
+    private static final String ORDER_BY = " ORDER BY ";
 
-    private static final String SELECT_ALL_BOOKS = SELECT_PREFIX + BOOK_COLUMNS_JOINED + " FROM books ORDER BY title";
-    private static final String SELECT_BOOK_BY_ID = SELECT_PREFIX + BOOK_COLUMNS_JOINED + " FROM books WHERE id = ?";
-    private static final String SELECT_AVAILABLE_BOOKS = SELECT_PREFIX + BOOK_COLUMNS_JOINED + " FROM books WHERE " + STOCK + " > 0 ORDER BY title";
-    private static final String SELECT_BOOKS_BY_CATEGORY = SELECT_PREFIX + BOOK_COLUMNS_JOINED + " FROM books WHERE category = ? ORDER BY title";
-    private static final String SELECT_BOOKS_BY_AUTHOR = SELECT_PREFIX + BOOK_COLUMNS_JOINED + " FROM books WHERE " + AUTHOR + " LIKE ? ORDER BY year DESC, title";
+    private static final String SELECT_ALL_BOOKS = SELECT_PREFIX + BOOK_COLUMNS_JOINED + FROM + ORDER_BY + TITLE;
+    private static final String SELECT_BOOK_BY_ID = SELECT_PREFIX + BOOK_COLUMNS_JOINED + FROM + WHERE + ID + " = ?";
+    private static final String SELECT_AVAILABLE_BOOKS = SELECT_PREFIX + BOOK_COLUMNS_JOINED + FROM + WHERE + STOCK + " > 0" + ORDER_BY + TITLE;
+    private static final String SELECT_BOOKS_BY_CATEGORY = SELECT_PREFIX + BOOK_COLUMNS_JOINED + FROM + WHERE + CATEGORY + " = ?" + ORDER_BY + TITLE;
+    private static final String SELECT_BOOKS_BY_AUTHOR = SELECT_PREFIX + BOOK_COLUMNS_JOINED + FROM + WHERE + AUTHOR + " LIKE ?" + ORDER_BY + YEAR + " DESC, " + TITLE;
 
-    private static final String INSERT_BOOK = "INSERT INTO books (title, author, category, year, publisher, pages, isbn, stock, plot, image_path, price) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
+    private static final String INSERT_BOOK = "INSERT INTO books (title, author, category, year, publisher, pages, isbn, stock, plot, image_path, price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     private static final String UPDATE_BOOK = "UPDATE books SET title=?, author=?, category=?, year=?, publisher=?, pages=?, isbn=?, stock=?, plot=?, image_path=?, price=? WHERE id=?";
-    private static final String DELETE_BOOK = "DELETE FROM books WHERE id=?";
-    private static final String UPDATE_STOCK = "UPDATE books SET stock = stock + ? WHERE id=?";
-    private static final String CHECK_AVAILABILITY = SELECT_PREFIX + STOCK + " FROM books WHERE id=?";
-
-    /* ============================================================= */
+    private static final String DELETE_BOOK = "DELETE FROM books" + WHERE + ID + " = ?";
+    private static final String UPDATE_STOCK = "UPDATE books SET " + STOCK + " = " + STOCK + " + ? " + WHERE + ID + " = ?";
+    private static final String CHECK_AVAILABILITY = SELECT_PREFIX + STOCK + FROM + WHERE + ID + " = ?";
 
     public DatabaseBookDAO(DBConnection dbConnection) {
         this.dbConnection = dbConnection;
@@ -80,10 +79,35 @@ public class DatabaseBookDAO implements BookDAO {
                                   boolean includeUnavailable) throws DAOException {
 
         List<Book> books = new ArrayList<>();
-        StringBuilder sql = new StringBuilder(SELECT_PREFIX + BOOK_COLUMNS_JOINED + " FROM books WHERE 1=1 ");
-
+        StringBuilder sql = new StringBuilder(SELECT_PREFIX + BOOK_COLUMNS_JOINED + FROM + WHERE + "1=1 ");
         List<Object> params = new ArrayList<>();
 
+        appendSearchCriteria(sql, params, searchText, searchMode, category, yearFrom, yearTo, includeUnavailable);
+
+        sql.append(ORDER_BY).append(TITLE);
+
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setObject(i + 1, params.get(i));
+            }
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                books.add(extractBookFromResultSet(rs));
+            }
+
+            return books;
+
+        } catch (SQLException e) {
+            LOGGER.error("Errore durante la ricerca dei libri", e);
+            throw new DAOException("Errore durante la ricerca dei libri", e);
+        }
+    }
+
+    private void appendSearchCriteria(StringBuilder sql, List<Object> params, String searchText, String searchMode,
+                                      String category, String yearFrom, String yearTo, boolean includeUnavailable) {
         if (searchText != null && !searchText.isBlank()) {
             if (TITLE.equalsIgnoreCase(searchMode)) {
                 sql.append("AND LOWER(").append(TITLE).append(") LIKE ? ");
@@ -119,27 +143,6 @@ public class DatabaseBookDAO implements BookDAO {
 
         if (!includeUnavailable) {
             sql.append("AND ").append(STOCK).append(" > 0 ");
-        }
-
-        sql.append("ORDER BY ").append(TITLE);
-
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-
-            for (int i = 0; i < params.size(); i++) {
-                stmt.setObject(i + 1, params.get(i));
-            }
-
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                books.add(extractBookFromResultSet(rs));
-            }
-
-            return books;
-
-        } catch (SQLException e) {
-            LOGGER.error("Errore durante la ricerca dei libri", e);
-            throw new DAOException("Errore durante la ricerca dei libri", e);
         }
     }
 
@@ -246,8 +249,6 @@ public class DatabaseBookDAO implements BookDAO {
         return executeBookListQuery(SELECT_AVAILABLE_BOOKS, null);
     }
 
-    /* ======================= HELPERS ======================= */
-
     private List<Book> executeBookListQuery(String sql, StatementFiller filler) throws DAOException {
         List<Book> books = new ArrayList<>();
         try (Connection conn = dbConnection.getConnection();
@@ -269,9 +270,7 @@ public class DatabaseBookDAO implements BookDAO {
         }
     }
 
-    private Book executeSingleBookQuery(String sql, StatementFiller filler, String notFoundMsg)
-            throws DAOException {
-
+    private Book executeSingleBookQuery(String sql, StatementFiller filler, String notFoundMsg) throws DAOException {
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 

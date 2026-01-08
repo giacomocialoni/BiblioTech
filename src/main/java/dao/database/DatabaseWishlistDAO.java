@@ -23,6 +23,8 @@ public class DatabaseWishlistDAO implements WishlistDAO {
     private static final String COLUMN_FIRST_NAME = "first_name";
     private static final String COLUMN_LAST_NAME = "last_name";
 
+    private static final String WHERE = " WHERE ";
+
     public DatabaseWishlistDAO(DBConnection dbConnection) {
         this.dbConnection = dbConnection;
     }
@@ -45,7 +47,7 @@ public class DatabaseWishlistDAO implements WishlistDAO {
 
     @Override
     public void removeFromWishlist(String userEmail, int bookId) throws DAOException {
-        String sql = "DELETE FROM " + TABLE_WISHLIST + " WHERE " + COLUMN_USER_EMAIL + " = ? AND " + COLUMN_BOOK_ID + " = ?";
+        String sql = "DELETE FROM " + TABLE_WISHLIST + WHERE + COLUMN_USER_EMAIL + " = ? AND " + COLUMN_BOOK_ID + " = ?";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -61,7 +63,7 @@ public class DatabaseWishlistDAO implements WishlistDAO {
 
     @Override
     public boolean isInWishlist(String userEmail, int bookId) throws DAOException {
-        String sql = "SELECT 1 FROM " + TABLE_WISHLIST + " WHERE " + COLUMN_USER_EMAIL + " = ? AND " + COLUMN_BOOK_ID + " = ?";
+        String sql = "SELECT 1 FROM " + TABLE_WISHLIST + WHERE + COLUMN_USER_EMAIL + " = ? AND " + COLUMN_BOOK_ID + " = ?";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -82,7 +84,7 @@ public class DatabaseWishlistDAO implements WishlistDAO {
         List<Wishlist> wishlist = new ArrayList<>();
         String sql = "SELECT " + COLUMN_USER_EMAIL + ", " + COLUMN_BOOK_ID +
                      " FROM " + TABLE_WISHLIST +
-                     " WHERE " + COLUMN_USER_EMAIL + " = ?";
+                     WHERE + COLUMN_USER_EMAIL + " = ?";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -109,7 +111,7 @@ public class DatabaseWishlistDAO implements WishlistDAO {
         List<User> users = new ArrayList<>();
         String sql = "SELECT u." + COLUMN_EMAIL + ", u." + COLUMN_PASSWORD + ", u." + COLUMN_FIRST_NAME + ", u." + COLUMN_LAST_NAME +
                      " FROM " + TABLE_WISHLIST + " w JOIN " + TABLE_USERS + " u ON w." + COLUMN_USER_EMAIL + " = u." + COLUMN_EMAIL +
-                     " WHERE w." + COLUMN_BOOK_ID + " = ?";
+                     WHERE + "w." + COLUMN_BOOK_ID + " = ?";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
