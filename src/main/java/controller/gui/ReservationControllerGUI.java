@@ -189,14 +189,11 @@ public class ReservationControllerGUI {
             // Processa prestiti
             for (LoanBean loan : loans) {
                 if (loan.getBook() != null) {
-                    // NOTA: I LoanBean dovrebbero avere getBookId() per ottenere l'ID del libro
-                    // Se non c'è, usa un metodo alternativo
-                    int bookId = getBookIdFromLoan(loan);
                     resultsContainer.getChildren().add(
                         cardFactory.createLoanCard(
                             loan,
                             loan.getBook(),
-                            () -> handleAcceptLoan(loan.getId(), bookId),
+                            () -> handleAcceptLoan(loan.getId()),
                             () -> handleRejectLoan(loan.getId())
                         )
                     );
@@ -209,15 +206,6 @@ public class ReservationControllerGUI {
         } catch (Exception e) {
             showError("Errore nella visualizzazione dei risultati");
         }
-    }
-    
-    private int getBookIdFromLoan(LoanBean loan) {
-        // Metodo helper per ottenere l'ID del libro dal prestito
-        // Controlla se il LoanBean ha getBookId() o se deve essere estratto dal BookBean
-        if (loan.getBook() != null) {
-            return loan.getBook().getId();
-        }
-        return -1; // Valore di default
     }
 
     private void updateResultsLabel(int total, int salesCount, int loansCount) {
@@ -259,7 +247,7 @@ public class ReservationControllerGUI {
         }
     }
 
-    private void handleAcceptLoan(int loanId, int bookId) {
+    private void handleAcceptLoan(int loanId) {
         try {
             boolean success = adminLoanFacade.acceptLoan(loanId);
             if (success) {
