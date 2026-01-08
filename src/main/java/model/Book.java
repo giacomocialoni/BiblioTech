@@ -16,7 +16,7 @@ public class Book {
     private String imagePath;
     private double price;
 
-    private Book() {}
+    Book() {}
 
     // Builder class
     public static class Builder {

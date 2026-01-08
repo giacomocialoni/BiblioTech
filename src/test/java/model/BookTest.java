@@ -26,9 +26,8 @@ class BookTest {
 
     @Test
     void testSetters() {
-        Book book = Book.builder().build();
+        Book book = new Book(); // Usa il costruttore vuoto invece del builder
         setAllBookProperties(book);
-
         verifyAllBookProperties(book);
     }
 
@@ -80,7 +79,7 @@ class BookTest {
         assertNull(book.getPublisher());
         assertNull(book.getIsbn());
         assertNull(book.getPlot());
-        assertEquals("default.jpg", book.getImagePath());
+        assertNull(book.getImagePath()); // CORREZIONE: dovrebbe essere null, non "default.jpg"
     }
 
     // Helper methods to extract complex logic

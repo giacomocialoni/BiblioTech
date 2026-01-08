@@ -20,6 +20,8 @@ class WishlistObserverTest {
 
         Book fakeBook = Book.builder()
                 .id(1)
+                .title("Test Title") // AGGIUNTO: titolo richiesto
+                .author("Test Author") // AGGIUNTO: autore richiesto
                 .stock(3)
                 .build();
 
