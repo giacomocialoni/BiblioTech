@@ -14,10 +14,13 @@ import java.util.List;
 public class CSVBookDAO implements BookDAO {
 
     private static final String FILE_PATH = "src/main/resources/data/book.csv";
+    
+    // Nuovo ordine delle colonne basato sul tuo file CSV
     private static final String[] COLUMNS = {
-        "id", "title", "author", "category", "year", "publisher",
-        "pages", "isbn", "stock", "plot", "image_path", "price"
+        "id", "title", "author", "year", "plot", "image_path", 
+        "publisher", "pages", "isbn", "stock", "category", "price"
     };
+    
     private static final String CSV_HEADER = String.join(",", COLUMNS);
 
     private final List<Book> books = new ArrayList<>();
@@ -96,21 +99,21 @@ public class CSVBookDAO implements BookDAO {
         }
         saveBooks();
     }
-    
+
     @Override
     public List<Book> searchBooks(String searchText, String searchMode, String category,
-                                  String yearFrom, String yearTo, boolean includeUnavailable) {
-        
+                                  String yearFrom, String yearTo, boolean includeUnavailable) throws DAOException {
+        ensureLoaded();
         return books.stream()
                 .filter(book -> includeUnavailable || book.getStock() > 0)
-                .filter(book -> category == null || category.isEmpty() || 
+                .filter(book -> category == null || category.isEmpty() ||
                         book.getCategory().equalsIgnoreCase(category))
                 .filter(book -> filterByYearFrom(book, yearFrom))
                 .filter(book -> filterByYearTo(book, yearTo))
                 .filter(book -> matchSearch(book, searchText, searchMode))
                 .toList();
     }
-    
+
     private boolean filterByYearFrom(Book book, String yearFrom) {
         if (yearFrom != null && !yearFrom.isEmpty()) {
             try {
@@ -122,7 +125,7 @@ public class CSVBookDAO implements BookDAO {
         }
         return true;
     }
-    
+
     private boolean filterByYearTo(Book book, String yearTo) {
         if (yearTo != null && !yearTo.isEmpty()) {
             try {
@@ -134,9 +137,10 @@ public class CSVBookDAO implements BookDAO {
         }
         return true;
     }
-    
+
     @Override
     public void updateStock(int bookId, int quantity) throws DAOException {
+        ensureLoaded();
         for (Book book : books) {
             if (book.getId() == bookId) {
                 int newStock = Math.max(0, book.getStock() + quantity);
@@ -145,52 +149,57 @@ public class CSVBookDAO implements BookDAO {
                 return;
             }
         }
+        throw new DAOException("Libro con ID " + bookId + " non trovato");
     }
-    
+
     @Override
-    public boolean isBookAvailable(int bookId) {
+    public boolean isBookAvailable(int bookId) throws DAOException {
+        ensureLoaded();
         return books.stream()
                 .filter(book -> book.getId() == bookId)
                 .findFirst()
                 .map(book -> book.getStock() > 0)
                 .orElse(false);
     }
-    
+
     @Override
-    public List<Book> getBooksByCategory(String category) {
+    public List<Book> getBooksByCategory(String category) throws DAOException {
+        ensureLoaded();
         return books.stream()
                 .filter(book -> book.getCategory().equalsIgnoreCase(category))
                 .toList();
     }
-    
+
     @Override
-    public List<Book> getBooksByAuthor(String author) {
+    public List<Book> getBooksByAuthor(String author) throws DAOException {
+        ensureLoaded();
         return books.stream()
                 .filter(book -> book.getAuthor().toLowerCase().contains(author.toLowerCase()))
                 .toList();
     }
-    
+
     @Override
-    public List<Book> getAvailableBooks() {
+    public List<Book> getAvailableBooks() throws DAOException {
+        ensureLoaded();
         return books.stream()
                 .filter(book -> book.getStock() > 0)
                 .toList();
     }
-    
+
     private boolean matchSearch(Book book, String searchText, String searchMode) {
         if (searchText == null || searchText.trim().isEmpty()) {
             return true;
         }
-        
+
         String text = searchText.toLowerCase().trim();
-        
+
         if ("author".equalsIgnoreCase(searchMode)) {
             return book.getAuthor().toLowerCase().contains(text);
         } else {
             return book.getTitle().toLowerCase().contains(text);
         }
     }
-    
+
     private void loadBooks() throws DAOException {
         books.clear();
         try {
@@ -202,7 +211,6 @@ public class CSVBookDAO implements BookDAO {
                 if (Files.exists(path)) {
                     loadFromFile(path);
                 } else {
-                    createSampleData();
                     saveBooks();
                 }
             }
@@ -210,27 +218,32 @@ public class CSVBookDAO implements BookDAO {
             throw new DAOException("Errore durante il caricamento dei libri", e);
         }
     }
-    
+
     private void loadFromResource(URL resource) throws IOException {
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(resource.openStream()))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.openStream()))) {
             loadFromReader(reader);
         }
     }
-    
+
     private void loadFromFile(Path path) throws IOException {
         try (BufferedReader reader = Files.newBufferedReader(path)) {
             loadFromReader(reader);
         }
     }
-    
+
     private void loadFromReader(BufferedReader reader) throws IOException {
         String header = reader.readLine();
-        if (header == null || !header.trim().equals(CSV_HEADER)) {
-            throw new IOException("File CSV dei libri non valido: header mancante o non corretto");
+        if (header == null) {
+            throw new IOException("File CSV dei libri non valido: header mancante");
         }
-        
+
+        String[] actualColumns = header.split(",");
+        if (actualColumns.length < COLUMNS.length) {
+            throw new IOException("File CSV dei libri non valido: colonne insufficienti");
+        }
+
         String line;
+        int lineNumber = 1;
         while ((line = reader.readLine()) != null && !line.trim().isEmpty()) {
             try {
                 Book book = parseBook(line);
@@ -238,91 +251,69 @@ public class CSVBookDAO implements BookDAO {
                     books.add(book);
                 }
             } catch (Exception e) {
-                // Skip invalid lines
+                System.err.println("Errore parsing riga " + lineNumber + ": " + e.getMessage());
+                // ignora righe invalide
             }
+            lineNumber++;
         }
     }
-    
-    private void createSampleData() {
-    	books.add(Book.builder()
-    		    .id(1)
-    		    .title("Clean Code")
-    		    .author("Robert C. Martin")
-    		    .category("Programming")
-    		    .year(2008)
-    		    .publisher("Prentice Hall")
-    		    .pages(464)
-    		    .isbn("9780132350884")
-    		    .stock(5)
-    		    .plot("A Handbook of Agile Software Craftsmanship")
-    		    .imagePath(null)  // o potresti ometterlo se il builder gestisce default
-    		    .price(39.99)
-    		    .build());
-    }
-    
+
     private void saveBooks() throws DAOException {
         Path path = Paths.get(FILE_PATH);
-        
         try {
             Files.createDirectories(path.getParent());
-            
             try (BufferedWriter writer = Files.newBufferedWriter(path)) {
                 writer.write(CSV_HEADER);
                 writer.newLine();
-                
                 for (Book book : books) {
                     writer.write(formatBook(book));
                     writer.newLine();
                 }
             }
-            
         } catch (IOException e) {
             throw new DAOException("Errore durante il salvataggio dei libri", e);
         }
     }
-    
+
     private Book parseBook(String line) {
         List<String> fields = parseCSVLine(line);
-        
-        if (fields.size() < COLUMNS.length) {
-            return null;
-        }
-        
+        if (fields.size() < COLUMNS.length) return null;
+
         try {
             return Book.builder()
-            	    .id(1)
-            	    .title("Il Signore degli Anelli")
-            	    .author("J.R.R. Tolkien")
-            	    .category("Fantasy")
-            	    .year(1954)
-            	    .publisher("Allen & Unwin")
-            	    .pages(1178)
-            	    .isbn("978-8845292614")
-            	    .stock(10)
-            	    .plot("Un anello per domarli tutti...")
-            	    .imagePath("lotr.jpg")
-            	    .price(25.99)
-            	    .build();
+                    .id(Integer.parseInt(fields.get(0)))        // id
+                    .title(fields.get(1))                      // title
+                    .author(fields.get(2))                     // author
+                    .year(Integer.parseInt(fields.get(3)))     // year
+                    .plot(fields.get(4))                       // plot
+                    .imagePath(fields.get(5))                  // image_path
+                    .publisher(fields.get(6))                  // publisher
+                    .pages(Integer.parseInt(fields.get(7)))    // pages
+                    .isbn(fields.get(8))                       // isbn
+                    .stock(Integer.parseInt(fields.get(9)))    // stock
+                    .category(fields.get(10))                  // category
+                    .price(Double.parseDouble(fields.get(11))) // price
+                    .build();
         } catch (NumberFormatException e) {
+            System.err.println("Errore parsing numerico: " + e.getMessage());
+            return null;
+        } catch (Exception e) {
+            System.err.println("Errore parsing libro: " + e.getMessage());
             return null;
         }
     }
-    
+
     private List<String> parseCSVLine(String line) {
         List<String> fields = new ArrayList<>();
         StringBuilder currentField = new StringBuilder();
         boolean inQuotes = false;
 
-        int i = 0;
-        while (i < line.length()) {
+        for (int i = 0; i < line.length(); i++) {
             char c = line.charAt(i);
-
             if (c == '"') {
                 if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
-                    // doppia virgoletta dentro le quote -> appendiamo una sola
                     currentField.append('"');
-                    i += 2; // salto la seconda virgoletta
-                    continue;
+                    i++;
                 } else {
                     inQuotes = !inQuotes;
                 }
@@ -332,36 +323,30 @@ public class CSVBookDAO implements BookDAO {
             } else {
                 currentField.append(c);
             }
-
-            i++;
         }
-
         fields.add(currentField.toString());
         return fields;
     }
-    
+
     private String formatBook(Book book) {
         return String.join(",",
-            String.valueOf(book.getId()),
-            escapeCSV(book.getTitle()),
-            escapeCSV(book.getAuthor()),
-            escapeCSV(book.getCategory()),
-            String.valueOf(book.getYear()),
-            escapeCSV(book.getPublisher()),
-            String.valueOf(book.getPages()),
-            escapeCSV(book.getIsbn()),
-            String.valueOf(book.getStock()),
-            escapeCSV(book.getPlot()),
-            escapeCSV(book.getImagePath() != null ? book.getImagePath() : ""),
-            String.valueOf(book.getPrice())
+                String.valueOf(book.getId()),
+                escapeCSV(book.getTitle()),
+                escapeCSV(book.getAuthor()),
+                String.valueOf(book.getYear()),
+                escapeCSV(book.getPlot()),
+                escapeCSV(book.getImagePath() != null ? book.getImagePath() : ""),
+                escapeCSV(book.getPublisher()),
+                String.valueOf(book.getPages()),
+                escapeCSV(book.getIsbn()),
+                String.valueOf(book.getStock()),
+                escapeCSV(book.getCategory()),
+                String.valueOf(book.getPrice())
         );
     }
-    
+
     private String escapeCSV(String text) {
-        if (text == null) {
-            return "";
-        }
-        
+        if (text == null) return "";
         if (text.contains(",") || text.contains("\"") || text.contains("\n")) {
             return "\"" + text.replace("\"", "\"\"") + "\"";
         }
