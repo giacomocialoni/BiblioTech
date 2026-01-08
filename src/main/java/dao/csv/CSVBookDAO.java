@@ -14,7 +14,7 @@ import java.util.List;
 public class CSVBookDAO implements BookDAO {
 
     private static final String FILE_PATH = "src/main/resources/data/book.csv";
-    
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(CSVBookDAO.class);
     // Nuovo ordine delle colonne basato sul tuo file CSV
     private static final String[] COLUMNS = {
         "id", "title", "author", "year", "plot", "image_path", 
@@ -251,8 +251,7 @@ public class CSVBookDAO implements BookDAO {
                     books.add(book);
                 }
             } catch (Exception e) {
-                System.err.println("Errore parsing riga " + lineNumber + ": " + e.getMessage());
-                // ignora righe invalide
+                LOGGER.error("Errore parsing riga " + lineNumber + ": ", e);
             }
             lineNumber++;
         }
@@ -295,10 +294,10 @@ public class CSVBookDAO implements BookDAO {
                     .price(Double.parseDouble(fields.get(11))) // price
                     .build();
         } catch (NumberFormatException e) {
-            System.err.println("Errore parsing numerico: " + e.getMessage());
+            LOGGER.error("Errore parsing numerico: ", e);
             return null;
         } catch (Exception e) {
-            System.err.println("Errore parsing libro: " + e.getMessage());
+            LOGGER.error("Errore parsing libro: ", e);
             return null;
         }
     }
@@ -308,12 +307,16 @@ public class CSVBookDAO implements BookDAO {
         StringBuilder currentField = new StringBuilder();
         boolean inQuotes = false;
 
-        for (int i = 0; i < line.length(); i++) {
+        int i = 0;
+        while (i < line.length()) {
             char c = line.charAt(i);
+
             if (c == '"') {
                 if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                    // Escaped quote ""
                     currentField.append('"');
-                    i++;
+                    i += 2;
+                    continue;
                 } else {
                     inQuotes = !inQuotes;
                 }
@@ -323,7 +326,10 @@ public class CSVBookDAO implements BookDAO {
             } else {
                 currentField.append(c);
             }
+
+            i++;
         }
+
         fields.add(currentField.toString());
         return fields;
     }
