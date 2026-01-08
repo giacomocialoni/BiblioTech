@@ -6,6 +6,7 @@ import dao.LoanDAO;
 import dao.BookDAO;
 import dao.factory.DAOFactory;
 import exception.DAOException;
+import exception.IncorrectDataException;
 import exception.RecordNotFoundException;
 import model.Loan;
 import model.Book;
@@ -15,7 +16,6 @@ import utils.LoanStatus;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class ReturnLoanController {
 
@@ -36,7 +36,7 @@ public class ReturnLoanController {
             return loanDAO.getAllActiveLoans().stream()
                     .map(this::toLoanBean)
                     .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             logger.error("Errore DAO recupero prestiti LOANED", e);
             return List.of();
@@ -49,7 +49,7 @@ public class ReturnLoanController {
                     .map(this::toLoanBean)
                     .filter(Objects::nonNull)
                     .filter(loan -> loan.getStatus() == LoanStatus.LOANED)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             logger.error("Errore DAO ricerca prestiti LOANED per utente", e);
             return List.of();
@@ -62,7 +62,7 @@ public class ReturnLoanController {
                     .map(this::toLoanBean)
                     .filter(Objects::nonNull)
                     .filter(loan -> loan.getStatus() == LoanStatus.LOANED)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             logger.error("Errore DAO ricerca prestiti LOANED per libro", e);
             return List.of();
@@ -96,20 +96,34 @@ public class ReturnLoanController {
             bean.setLoanedDate(loan.getLoanedDate());
             bean.setReturningDate(loan.getReturningDate());
 
-            try {
-                Book book = bookDAO.getBookById(loan.getBookId());
-                if (book != null) {
-                    bean.setBook(mapBookToBean(book));
-                }
-            } catch (DAOException e) {
-                logger.warn("Impossibile recuperare il libro per prestito id={}", loan.getId(), e);
-            }
+            BookBean bookBean = safeGetBookBeanForLoan(loan.getBookId(), loan.getId());
+            bean.setBook(bookBean);
 
             return bean;
         } catch (Exception e) {
             logger.warn("Errore mapping prestito id={}", loan.getId(), e);
             return null;
         }
+    }
+
+    private BookBean safeGetBookBeanForLoan(int bookId, int loanId) {
+        try {
+            Book book = bookDAO.getBookById(bookId);
+            if (book != null) {
+                return mapBookToBean(book);
+            }
+        } catch (DAOException e) {
+            logger.warn("Impossibile recuperare il libro ID {} per prestito id={}", bookId, loanId, e);
+        }
+
+        // fallback: bean con solo ID libro
+        BookBean fallback = new BookBean();
+        try {
+            fallback.setId(bookId);
+        } catch (IncorrectDataException e) {
+            logger.warn("Impossibile impostare ID del BookBean fallback per libro ID {} prestito id={}", bookId, loanId, e);
+        }
+        return fallback;
     }
 
     private BookBean mapBookToBean(Book book) {

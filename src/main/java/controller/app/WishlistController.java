@@ -59,15 +59,9 @@ public class WishlistController {
             List<Wishlist> wishlist = wishlistDAO.getWishlistByUser(email);
 
             for (Wishlist w : wishlist) {
-                try {
-                    Book book = bookDAO.getBookById(w.getBookId());
-                    BookBean bean = toBookBean(book);
-                    if (bean != null) beans.add(bean);
-
-                } catch (RecordNotFoundException e) {
-                    logger.warn("Libro non trovato id={}", w.getBookId());
-                } catch (DAOException e) {
-                    logger.error("Errore DAO recupero libro id={}", w.getBookId(), e);
+                BookBean bean = safeGetBookBeanForWishlist(w.getBookId());
+                if (bean != null) {
+                    beans.add(bean);
                 }
             }
 
@@ -76,6 +70,18 @@ public class WishlistController {
         }
 
         return beans;
+    }
+
+    private BookBean safeGetBookBeanForWishlist(int bookId) {
+        try {
+            Book book = bookDAO.getBookById(bookId);
+            return toBookBean(book);
+        } catch (RecordNotFoundException e) {
+            logger.warn("Libro non trovato id={}", bookId);
+        } catch (DAOException e) {
+            logger.error("Errore DAO recupero libro id={}", bookId, e);
+        }
+        return null;
     }
 
     /* =====================

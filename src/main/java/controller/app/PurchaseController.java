@@ -15,10 +15,14 @@ import utils.PurchaseStatus;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PurchaseController {
 
+	private static final Logger logger =
+            LoggerFactory.getLogger(PurchaseController.class);
     private final BookDAO bookDAO;
     private final PurchaseDAO purchaseDAO;
 
@@ -72,7 +76,7 @@ public class PurchaseController {
             return purchaseDAO.getPurchasesByStatus(PurchaseStatus.RESERVED)
                     .stream()
                     .map(this::toPurchaseBean)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             return List.of();
         }
@@ -83,7 +87,7 @@ public class PurchaseController {
             return purchaseDAO.searchPurchasesByUser(userText)
                     .stream()
                     .map(this::toPurchaseBean)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             return List.of();
         }
@@ -94,7 +98,7 @@ public class PurchaseController {
             return purchaseDAO.searchPurchasesByBook(bookText)
                     .stream()
                     .map(this::toPurchaseBean)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             return List.of();
         }
@@ -135,27 +139,41 @@ public class PurchaseController {
             LocalDate statusDate = purchase.getStatusDate();
             bean.setStatusDate(statusDate != null ? statusDate : LocalDate.now());
 
-            try {
-                Book book = bookDAO.getBookById(purchase.getBookId());
-                if (book != null) {
-                    BookBean bookBean = new BookBean();
-                    bookBean.setId(book.getId());
-                    bookBean.setTitle(book.getTitle());
-                    bookBean.setAuthor(book.getAuthor());
-                    bookBean.setCategory(book.getCategory());
-                    bookBean.setPrice(book.getPrice());
-                    bookBean.setStock(book.getStock());
-                    bookBean.setImagePath(book.getImagePath() != null ? book.getImagePath() : "default.jpg");
-                    bean.setBook(bookBean);
-                }
-            } catch (DAOException e) {
-                // fallback: bean con solo ID libro
-            }
+            BookBean bookBean = safeGetBookBeanForPurchase(purchase.getBookId());
+            bean.setBook(bookBean);
 
         } catch (IncorrectDataException e) {
-            // log o ignorare
+            logger.warn("Errore conversione PurchaseBean per acquisto ID: {}", purchase.getId(), e);
         }
 
         return bean;
+    }
+
+    private BookBean safeGetBookBeanForPurchase(int bookId) {
+        try {
+            Book book = bookDAO.getBookById(bookId);
+            if (book != null) {
+                BookBean bookBean = new BookBean();
+                bookBean.setId(book.getId());
+                bookBean.setTitle(book.getTitle());
+                bookBean.setAuthor(book.getAuthor());
+                bookBean.setCategory(book.getCategory());
+                bookBean.setPrice(book.getPrice());
+                bookBean.setStock(book.getStock());
+                bookBean.setImagePath(book.getImagePath() != null ? book.getImagePath() : "default.jpg");
+                return bookBean;
+            }
+        } catch (IncorrectDataException | DAOException e) {
+            logger.warn("Impossibile recuperare libro ID {} per acquisto", bookId, e);
+        }
+
+        // fallback: bean con solo ID libro
+        BookBean fallback = new BookBean();
+        try {
+            fallback.setId(bookId);
+        } catch (IncorrectDataException e) {
+            logger.warn("Impossibile impostare ID del BookBean fallback per libro ID {}", bookId, e);
+        }
+        return fallback;
     }
 }

@@ -42,7 +42,6 @@ public class SignInController {
          throw e;
          
      } catch (DAOException e) {
-         logger.error("Errore database durante registrazione per {}", email, e);
          logRegistrationAttempt(email, "database_error");
          throw new DAOException("Errore temporaneo nel sistema. Riprova tra qualche minuto.", e);
      }
@@ -68,17 +67,12 @@ public class SignInController {
          bean.setRole(account.getRole());
          return bean;
      } catch (IncorrectDataException e) {
-         logger.warn("Errore nella creazione AccountBean per {}", email, e);
          throw new DAOException("Errore nella creazione dell'account", e);
      }
  }
  
  private void logRegistrationAttempt(String email, String outcome) {
      logger.info("Tentativo registrazione - Email: {}, Esito: {}, IP: {}, Ora: {}", 
-                email, outcome, getClientIP(), new java.util.Date());
- }
- 
- private String getClientIP() {
-     return "unknown";
+                email, outcome, "unknown", new java.util.Date());
  }
 }

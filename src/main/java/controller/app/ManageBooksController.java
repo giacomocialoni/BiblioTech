@@ -87,8 +87,6 @@ public class ManageBooksController {
 
         } catch (DuplicateBookException e) {
             logger.warn("Libro duplicato: {}", e.getMessage());
-            throw e;
-
         } catch (DAOException e) {
         	logger.error("Errore DAO durante l'aggiunta del libro: {}", bookBean.getTitle(), e);
         }

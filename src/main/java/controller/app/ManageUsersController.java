@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ManageUsersController {
 
@@ -41,7 +40,7 @@ public class ManageUsersController {
             List<User> users = userDAO.getAllUsers();
             return users.stream()
                     .map(this::createUserDisplayDTO)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             logger.error("Errore nel recupero utenti per visualizzazione", e);
             return Collections.emptyList();
@@ -58,12 +57,12 @@ public class ManageUsersController {
                     .filter(u -> u.getEmail().toLowerCase().contains(lower) ||
                                  u.getFirstName().toLowerCase().contains(lower) ||
                                  u.getLastName().toLowerCase().contains(lower))
-                    .collect(Collectors.toList());
+                    .toList();
             }
             
             return filteredUsers.stream()
                     .map(this::createUserDisplayDTO)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             logger.error("Errore nella ricerca utenti", e);
             return Collections.emptyList();
@@ -118,11 +117,11 @@ public class ManageUsersController {
     
     private String getLastLoanInfo(String userEmail) throws DAOException {
         List<Loan> loans = loanDAO.getLoansByUser(userEmail);
-        
+
         if (loans.isEmpty()) {
             return "Ultimo prestito: Nessun prestito";
         }
-        
+
         Loan lastLoan = loans.stream()
                 .filter(l -> l.getLoanedDate() != null)
                 .max(Comparator.comparing(Loan::getLoanedDate))
@@ -130,16 +129,19 @@ public class ManageUsersController {
                         .filter(l -> l.getReservedDate() != null)
                         .max(Comparator.comparing(Loan::getReservedDate))
                         .orElse(loans.get(0)));
-        
+
         Book book = bookDAO.getBookById(lastLoan.getBookId());
         String bookTitle = book != null ? book.getTitle() : "Libro sconosciuto";
-        
-        String dateText = lastLoan.getLoanedDate() != null ?
-                lastLoan.getLoanedDate().format(DateTimeFormatter.ofPattern(DATE_FORMAT)) :
-                (lastLoan.getReservedDate() != null ?
-                 lastLoan.getReservedDate().format(DateTimeFormatter.ofPattern(DATE_FORMAT)) + " (prenotato)" :
-                 "Data non disponibile");
-        
+
+        String dateText;
+        if (lastLoan.getLoanedDate() != null) {
+            dateText = lastLoan.getLoanedDate().format(DateTimeFormatter.ofPattern(DATE_FORMAT));
+        } else if (lastLoan.getReservedDate() != null) {
+            dateText = lastLoan.getReservedDate().format(DateTimeFormatter.ofPattern(DATE_FORMAT)) + " (prenotato)";
+        } else {
+            dateText = "Data non disponibile";
+        }
+
         return "Ultimo prestito: " + bookTitle + " (" + dateText + ")";
     }
     
@@ -225,6 +227,6 @@ public class ManageUsersController {
     private List<UserBean> mapUsersToBeans(List<User> users) {
         return users.stream()
                 .map(this::mapUserToBean)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

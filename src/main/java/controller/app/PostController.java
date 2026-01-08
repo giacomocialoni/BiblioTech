@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class PostController {
 
@@ -30,7 +29,7 @@ public class PostController {
             List<Post> posts = postDAO.getAllPostsOrderedByDate();
             return posts.stream()
                     .map(this::postToBean)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             logger.error("Errore DAO durante il recupero dei post", e);
             return List.of();
