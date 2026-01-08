@@ -16,7 +16,6 @@ import utils.Constants;
 import utils.LoanResult;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class LoanController {
 
@@ -98,7 +97,7 @@ public class LoanController {
             return loanDAO.getLoansByUser(userEmail)
                     .stream()
                     .map(this::toLoanBean)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             logger.error("Errore recupero prestiti", e);
             return List.of();
@@ -114,7 +113,7 @@ public class LoanController {
             return loanDAO.getAllReservedLoans()
                     .stream()
                     .map(this::toLoanBean)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             logger.error("Errore recupero prestiti riservati", e);
             return List.of();
@@ -126,7 +125,7 @@ public class LoanController {
             return loanDAO.searchLoansByUser(userText)
                     .stream()
                     .map(this::toLoanBean)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             logger.error("Errore ricerca prestiti per utente", e);
             return List.of();
@@ -138,7 +137,7 @@ public class LoanController {
             return loanDAO.searchLoansByBook(bookText)
                     .stream()
                     .map(this::toLoanBean)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (DAOException e) {
             logger.error("Errore ricerca prestiti per libro", e);
             return List.of();

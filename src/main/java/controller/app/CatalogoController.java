@@ -1,7 +1,6 @@
 package controller.app;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import bean.BookBean;
 import dao.BookDAO;
@@ -31,7 +30,7 @@ public class CatalogoController {
             return bookDAO.getAllBooks()
                     .stream()
                     .map(this::toBookBean)
-                    .collect(Collectors.toList());
+                    .toList();
 
         } catch (DAOException e) {
             logger.error("Errore DAO durante il recupero del catalogo libri", e);

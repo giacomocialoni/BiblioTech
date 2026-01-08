@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ManageBooksController {
 
@@ -34,7 +33,7 @@ public class ManageBooksController {
                                         book.getAuthor().toLowerCase().contains(lower) ||
                                         book.getIsbn().toLowerCase().contains(lower) ||
                                         book.getCategory().toLowerCase().contains(lower))
-                        .collect(Collectors.toList());
+                        .toList();
             }
             return mapBooks(allBooks);
         } catch (DAOException e) {
@@ -91,8 +90,7 @@ public class ManageBooksController {
             throw e;
 
         } catch (DAOException e) {
-            logger.error("Errore DAO durante la creazione del libro", e);
-            throw new RuntimeException("Errore durante la creazione del libro", e);
+        	logger.error("Errore DAO durante l'aggiunta del libro: {}", bookBean.getTitle(), e);
         }
     }
 

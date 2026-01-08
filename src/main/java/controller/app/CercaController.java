@@ -14,7 +14,6 @@ import bean.BookBean;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class CercaController {
 
@@ -61,7 +60,7 @@ public class CercaController {
                     logger.warn("Dati libro non validi: " + book.getId(), e);
                 }
                 return bean;
-            }).collect(Collectors.toList());
+            }).toList();
 
         } catch (DAOException e) {
             logger.error("Errore durante la ricerca dei libri", e);
@@ -74,10 +73,10 @@ public class CercaController {
             categoryDAO.addCategory(category);
             return true;
         } catch (DuplicateRecordException e) {
-            logger.warn("Categoria già esistente: " + category.getCategory());
+            logger.warn("Categoria già esistente: {}", category.getCategory());
             return false;
         } catch (DAOException e) {
-            logger.error("Errore durante l'aggiunta della categoria: " + category.getCategory(), e);
+            logger.error("Errore durante l'aggiunta della categoria: {}", category.getCategory(), e);
             return false;
         }
     }
@@ -87,10 +86,10 @@ public class CercaController {
             categoryDAO.deleteCategory(categoryName);
             return true;
         } catch (RecordNotFoundException e) {
-            logger.warn("Categoria non trovata: " + categoryName);
+            logger.warn("Categoria non trovata: {}", categoryName);
             return false;
         } catch (DAOException e) {
-            logger.error("Errore durante l'eliminazione della categoria: " + categoryName, e);
+            logger.error("Errore durante l'eliminazione della categoria: {}", categoryName, e);
             return false;
         }
     }
