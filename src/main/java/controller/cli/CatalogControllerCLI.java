@@ -29,12 +29,11 @@ public class CatalogControllerCLI {
 
             for (BookBean b : books) {
                 System.out.printf(
-                        "[%d] %s - %s (%s) | €%.2f | stock: %d%n",
+                        "[%d] %s - %s (%s) | stock: %d%n",
                         b.getId(),
                         b.getTitle(),
                         b.getAuthor(),
                         b.getCategory(),
-                        b.getPrice(),
                         b.getStock()
                 );
             }

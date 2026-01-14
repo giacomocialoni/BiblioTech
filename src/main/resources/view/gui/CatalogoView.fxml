@@ -13,7 +13,7 @@
                   <!-- Titolo pagina -->
          <Label styleClass="page-subtitle" text="Esplora la nostra collezione" />
       <Separator prefWidth="200.0" styleClass="separator" />
-      <ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" maxHeight="Infinity" maxWidth="Infinity" vbarPolicy="AS_NEEDED">
+      <ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" maxHeight="Infinity" maxWidth="Infinity" vbarPolicy="ALWAYS">
           
           <content>
               <VBox spacing="25">

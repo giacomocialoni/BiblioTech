@@ -22,7 +22,7 @@ public class MainAdminControllerCLI {
 
             switch (choice) {
                 case "A":
-                    System.out.println("Sezione Prenotazioni (da implementare).");
+                	new ReservationControllerCLI(scanner).start();
                     break;
                 case "B":
                     System.out.println("Gestione Libri (da implementare).");

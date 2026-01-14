@@ -95,7 +95,7 @@ public class ReservationCardFactory {
         imageContainer.setAlignment(Pos.CENTER);
         imageContainer.setPadding(new Insets(15));
         imageContainer.setMinWidth(150);
-        imageContainer.setStyle("-fx-background-color: #faf8f5; -fx-background-radius: 10; -fx-border-radius: 10;");
+        imageContainer.setStyle("-fx-background-color: #faf8f5; -fx-background-radius: 15; -fx-border-radius: 10;");
 
         Rectangle containerClip = new Rectangle(150, 190);
         containerClip.setArcWidth(20);

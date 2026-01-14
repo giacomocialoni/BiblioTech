@@ -4,3 +4,5 @@ id,user_email,book_id,status,reserved_date,loaned_date,returning_date
 21,simone.cialoni04@gmail.com,19,RETURNED,2025-12-18,2025-12-18,2026-01-17
 22,simone.cialoni04@gmail.com,23,RETURNED,2025-12-18,2025-12-18,2026-01-17
 23,simone.cialoni04@gmail.com,24,LOANED,2025-12-19,2025-12-19,2026-01-18
+24,simone.cialoni04@gmail.com,8,LOANED,2026-01-14,2026-01-14,2026-02-13
+25,simone.cialoni04@gmail.com,8,RESERVED,2026-01-14,,

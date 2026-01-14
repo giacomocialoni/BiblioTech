@@ -34,9 +34,15 @@ public class MainUserControllerCLI {
                     new InfoControllerCLI(scanner).start();
                     break;
                 case "P":
-                    System.out.println("Sezione Profilo (da implementare).");
+                    new ProfileControllerCLI(scanner).start();
                     break;
                 case "L":
+                    new UserLoanControllerCLI(scanner).start();
+                    break;
+                case "U":
+                    System.out.println("Purchases da implementare.");
+                    break;
+                case "O":
                     logoutController.logout();
                     System.out.println("Logout effettuato.");
                     running = false;
@@ -58,7 +64,9 @@ public class MainUserControllerCLI {
         System.out.println("[B] Board");
         System.out.println("[I] Info");
         System.out.println("[P] Profile");
-        System.out.println("[L] Logout");
+        System.out.println("[L] Loans (Prestiti)");
+        System.out.println("[U] Purchases (Acquisti) - da implementare");
+        System.out.println("[O] Logout");
         System.out.println("[Q] Quit");
         System.out.print("Scelta: ");
     }
