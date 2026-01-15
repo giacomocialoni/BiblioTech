@@ -27,6 +27,9 @@ public class MainAdminControllerCLI {
                 case "B":
                     System.out.println("Gestione Libri (da implementare).");
                     break;
+                case "C":
+                	System.out.println("Creaziione Libri (da implementare).");
+                	break;
                 case "U":
                     System.out.println("Gestione Utenti (da implementare).");
                     break;
@@ -55,6 +58,7 @@ public class MainAdminControllerCLI {
         System.out.println("\n=== BiblioTech CLI (Admin) ===");
         System.out.println("[A] Reservations");
         System.out.println("[B] Manage Books");
+        System.out.println("[C] Create Book");
         System.out.println("[U] Manage Users");
         System.out.println("[P] Create Post");
         System.out.println("[R] Return Books");
