@@ -30,6 +30,12 @@ public class LoanController {
         this.bookDAO = factory.getBookDAO();
         this.loanDAO = factory.getLoanDAO();
     }
+    
+    // Costruttore per i test
+    public LoanController(BookDAO bookDAO, LoanDAO loanDAO) {
+        this.bookDAO = bookDAO;
+        this.loanDAO = loanDAO;
+    }
 
     /* =========================
        USER OPERATIONS

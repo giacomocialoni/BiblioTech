@@ -77,7 +77,7 @@ public class Main {
             ApplicationGUI.launchApp(args);
 
         } else if ("DEMO".equalsIgnoreCase(viewType)) {
-
+        	// DEMO avviata con DAO In Memory di default
             DAOFactory.init("INMEMORY", null);
             ApplicationCLI.start();
 

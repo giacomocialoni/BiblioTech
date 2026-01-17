@@ -5,6 +5,7 @@ import model.Account;
 /**
  * Singleton che rappresenta la sessione utente.
  * Supporta multilogin consecutivi tramite reset/init controllati.
+ * init reset
  */
 public final class Session {
 
